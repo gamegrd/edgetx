@@ -235,8 +235,14 @@ static void* stm32_serial_init(void* hw_def, const etx_serial_init* params)
   auto st = stm32_serial_find_state(usart);
   if (!st || st->sp) return nullptr;
 
-  if (!stm32_usart_init(usart, params)) return nullptr;
+  // Set serial port instance *before* in case an interrupt is triggered
+  // before this method returns.
   st->sp = sp;
+
+  if (!stm32_usart_init(usart, params)) {
+    st->sp = nullptr;
+    return nullptr;
+  }
 
   if (params->direction & ETX_Dir_TX) {
     // prepare for send_byte()

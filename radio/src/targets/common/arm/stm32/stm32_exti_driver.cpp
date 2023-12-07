@@ -19,6 +19,7 @@
  * GNU General Public License for more details.
  */
 
+#include "stm32_hal.h"
 #include "stm32_hal_ll.h"
 #include "stm32_exti_driver.h"
 #include "hal.h"
@@ -33,7 +34,7 @@
   {                                                                     \
     /* Read Pending register */                                         \
     /* (shifted by start line) */                                       \
-    uint32_t pr = LL_EXTI_ReadReg(PR) >> first;                         \
+    uint32_t pr = LL_EXTI_ReadReg(PR1) >> first;                         \
     pr &=  _PR_MASK(first,last);                                        \
     while (pr) {                                                        \
       uint32_t i = POSITION_VAL(pr);                                    \
@@ -100,7 +101,10 @@ void stm32_exti_enable(uint32_t line, uint8_t trigger, stm32_exti_handler_t cb)
 
 #if defined(LL_APB2_GRP1_PERIPH_EXTI)
   LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_EXTI);
+#elif defined(LL_CKGA_PERIPH_EXTI)
+  LL_CKGA_Enable(LL_CKGA_PERIPH_EXTI);
 #endif
+
 
   LL_EXTI_InitTypeDef EXTI_init;
   LL_EXTI_StructInit(&EXTI_init);

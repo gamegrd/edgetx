@@ -115,13 +115,16 @@ int stm32_i2c_init(uint8_t bus, uint32_t clock_rate)
   if (!h) return -1;
 
   I2C_InitTypeDef& init = h->Init;
+#ifdef STM32H7
+  init.Timing = 0x10B0354F;
+#else
   if (init.ClockSpeed > 0) {
     if (init.ClockSpeed != clock_rate) return -1;
     return 0;
   }
-  
   init.ClockSpeed = clock_rate;
   init.DutyCycle = I2C_DUTYCYCLE_16_9;
+#endif
   init.OwnAddress1 = 0;
   init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -134,7 +137,7 @@ int stm32_i2c_init(uint8_t bus, uint32_t clock_rate)
     return -1;
   }
 
-#if  defined(I2C_FLTR_ANOFF) && defined(I2C_FLTR_DNF)
+#if  defined(I2C_FLTR_ANOFF) && defined(I2C_FLTR_DNF) || defined(STM32H7)
   // Configure Analogue filter
   if (HAL_I2CEx_ConfigAnalogFilter(h, I2C_ANALOGFILTER_ENABLE) != HAL_OK) {
     TRACE("I2C ERROR: HAL_I2CEx_ConfigAnalogFilter() failed");
@@ -157,7 +160,7 @@ int stm32_i2c_deinit(uint8_t bus)
   if (!h) return -1;  
 
   if (HAL_I2C_DeInit(h) != HAL_OK) return -1;
-  h->Init.ClockSpeed = 0;
+  //h->Init.ClockSpeed = 0;
   
   return 0;
 }
@@ -233,16 +236,15 @@ int stm32_i2c_is_dev_ready(uint8_t bus, uint16_t addr, uint32_t timeout)
 static int i2c_enable_gpio_clock(GPIO_TypeDef *GPIOx)
 {
   if (GPIOx == GPIOA)
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
+    __HAL_RCC_GPIOA_CLK_ENABLE();
   else if (GPIOx == GPIOB)
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
+    __HAL_RCC_GPIOB_CLK_ENABLE();
   else if (GPIOx == GPIOC)
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
+    __HAL_RCC_GPIOC_CLK_ENABLE();
   else if (GPIOx == GPIOH)
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOH);
+    __HAL_RCC_GPIOH_CLK_ENABLE();
   else
     return -1;
-
   return 0;
 }
 
@@ -258,6 +260,7 @@ static int i2c_enable_clock(I2C_TypeDef* instance)
   else
     return -1;
 
+  LL_RCC_SetClockSource(LL_RCC_I2C123_CLKSOURCE_PCLK1);
   return 0;
 }
 
@@ -312,7 +315,7 @@ static int i2c_pins_deinit(const _i2c_defs* def)
   LL_GPIO_InitTypeDef pinInit;
   LL_GPIO_StructInit(&pinInit);
   
-  pinInit.Speed = LL_GPIO_SPEED_FREQ_LOW;
+  pinInit.Speed = LL_GPIO_SPEED_FREQ_MEDIUM;
   pinInit.Mode = LL_GPIO_MODE_INPUT;
   pinInit.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
   pinInit.Pull = LL_GPIO_PULL_NO;
@@ -339,6 +342,25 @@ static int i2c_pins_deinit(const _i2c_defs* def)
   */
 void HAL_I2C_MspInit(I2C_HandleTypeDef *h)
 {
+  // PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C1;
+  // PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C123CLKSOURCE_D2PCLK1;
+  // HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
+
+  // PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C2;
+  // PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C123CLKSOURCE_D2PCLK1;
+  // HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
+
+  // PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C3;
+  // PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C123CLKSOURCE_D2PCLK1;
+  // HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
+
+  // __HAL_RCC_GPIOB_CLK_ENABLE();
+  // __HAL_RCC_GPIOH_CLK_ENABLE();
+
+  // __HAL_RCC_I2C1_CLK_ENABLE();
+  // __HAL_RCC_I2C2_CLK_ENABLE();
+  // __HAL_RCC_I2C3_CLK_ENABLE();
+
   const _i2c_defs* defs = nullptr;
 #if defined(I2C_B1)
   if (h == &hi2c1) { defs = &pins_hi2c1; }

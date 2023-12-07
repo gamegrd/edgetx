@@ -243,6 +243,7 @@ class SubPage : public Page
   }
 };
 
+#if defined(AUDIO)
 class SoundPage : public SubPage
 {
  public:
@@ -302,6 +303,7 @@ class SoundPage : public SubPage
                GET_SET_DEFAULT(g_eeGeneral.backgroundVolume));
   }
 };
+#endif
 
 #if defined(VARIO)
 class VarioPage : public SubPage
@@ -793,7 +795,9 @@ void RadioSetupPage::build(Window* window)
 
   // Sub-pages
   new WindowButtonGroup(window, rect_t{}, {
-    {STR_SOUND_LABEL, []() { new SoundPage(); }},
+#if defined(AUDIO)
+        {STR_SOUND_LABEL, []() { new SoundPage(); }},
+#endif
 #if defined(VARIO)
         {STR_VARIO, []() { new VarioPage(); }},
 #endif

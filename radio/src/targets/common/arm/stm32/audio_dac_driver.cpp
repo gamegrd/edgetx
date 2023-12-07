@@ -73,6 +73,7 @@ static inline bool getMutePin(void)
 // So maybe it is automatically done
 void dacInit()
 {
+#if 0
   dacTimerInit();
 
 #if defined(AUDIO_MUTE_GPIO)
@@ -101,6 +102,7 @@ void dacInit()
   NVIC_SetPriority(AUDIO_TIM_IRQn, 7);
   NVIC_EnableIRQ(AUDIO_DMA_Stream_IRQn);
   NVIC_SetPriority(AUDIO_DMA_Stream_IRQn, 7);
+#endif
 }
 
 #if defined(AUDIO_MUTE_GPIO_PIN)
@@ -147,6 +149,7 @@ if(isFunctionActive(FUNCTION_DISABLE_AUDIO_AMP)) {
 
 void audioConsumeCurrentBuffer()
 {
+#if ß
   if (!nextBuffer) {
     nextBuffer = audioQueue.buffersFifo.getNextFilledBuffer();
     if (nextBuffer) {
@@ -167,14 +170,17 @@ void audioConsumeCurrentBuffer()
     }
 #endif
   }
+#endif
 }
 
 void dacStart()
 {
+#if 0
   AUDIO_DMA->HIFCR = DMA_HIFCR_CTCIF5 | DMA_HIFCR_CHTIF5 | DMA_HIFCR_CTEIF5 | DMA_HIFCR_CDMEIF5 | DMA_HIFCR_CFEIF5 ; // Write ones to clear bits
   AUDIO_DMA_Stream->CR |= DMA_SxCR_CIRC | DMA_SxCR_EN ;                               // Enable DMA channel
   DAC->SR = DAC_SR_DMAUDR1 ;                      // Write 1 to clear flag
   DAC->CR |= DAC_CR_EN1 | DAC_CR_DMAEN1 ;                 // Enable DAC
+#endif
 }
 
 void dacStop()
@@ -191,25 +197,30 @@ void audioInit()
 
 void audioEnd()
 {
+#if 0
   DAC->CR = 0 ;
   AUDIO_TIMER->CR1 = 0 ;
   // Also need to turn off any possible interrupts
   NVIC_DisableIRQ(AUDIO_TIM_IRQn) ;
   NVIC_DisableIRQ(AUDIO_DMA_Stream_IRQn) ;
+#endif
 }
 
 extern "C" void AUDIO_TIM_IRQHandler()
 {
+#if 0
   DEBUG_INTERRUPT(INT_AUDIO);
   DAC->CR &= ~DAC_CR_DMAEN1 ;     // Stop DMA requests
 #if defined(STM32F2)
   DAC->CR &= ~DAC_CR_DMAUDRIE1 ;  // Stop underrun interrupt
 #endif
   DAC->SR = DAC_SR_DMAUDR1 ;      // Write 1 to clear flag
+#endif
 }
 
 extern "C" void AUDIO_DMA_Stream_IRQHandler()
 {
+#if 0
   AUDIO_DMA_Stream->CR &= ~DMA_SxCR_TCIE ;            // Stop interrupt
   AUDIO_DMA->HIFCR = DMA_HIFCR_CTCIF5 | DMA_HIFCR_CHTIF5 | DMA_HIFCR_CTEIF5 | DMA_HIFCR_CDMEIF5 | DMA_HIFCR_CFEIF5 ; // Write ones to clear flags
   AUDIO_DMA_Stream->CR &= ~DMA_SxCR_EN ;                              // Disable DMA channel
@@ -224,5 +235,6 @@ extern "C" void AUDIO_DMA_Stream_IRQHandler()
     AUDIO_DMA_Stream->CR |= DMA_SxCR_EN | DMA_SxCR_TCIE ;       // Enable DMA channel
     DAC->SR = DAC_SR_DMAUDR1;                      // Write 1 to clear flag
   }
+#endif
 }
 #endif  // #if !defined(SIMU)

@@ -22,11 +22,20 @@
 #include "stm32_adc.h"
 #include "stm32_dma.h"
 #include "stm32_gpio_driver.h"
+
+#include "stm32_hal_ll.h"
+#include "stm32_hal.h"
+
 #include "timers_driver.h"
 
 #include "opentx.h"
 
-#define ADC_COMMON ((ADC_Common_TypeDef *)ADC_BASE)
+#if defined(ADC12_COMMON)
+#  define ADC_COMMON ADC12_COMMON
+#else
+#  define ADC_COMMON ((ADC_Common_TypeDef *)ADC_BASE)
+#endif
+
 #define OVERSAMPLING 4
 
 #define SAMPLING_TIMEOUT_US 500
@@ -35,13 +44,28 @@
 // to avoid issues with preemption between these 2
 #define ADC_IRQ_PRIO   configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
 
+#if defined(STM32H7)
+#  define _ENABLE_EOCIE(ADCx) SET_BIT(ADCx->IER, ADC_IER_EOCIE)
+#  define _DISABLE_EOCIE(ADCx) CLEAR_BIT(ADCx->IER, ADC_IER_EOCIE)
+#  define _START_ADC_SINGLE(ADCx) SET_BIT(ADCx->CR, ADC_CR_ADSTART)
+#  define _START_ADC_DMA(ADCx) _START_ADC_SINGLE(ADCx)
+#  define _CLEAR_ADC_STATUS(ADCx) CLEAR_BIT(ADCx->ISR, ADC_ISR_EOC | ADC_ISR_OVR)
+#else
+#  define _ENABLE_EOCIE(ADCx) SET_BIT(ADCx->CR1, ADC_CR1_EOCIE)
+#  define _DISABLE_EOCIE(ADCx) CLEAR_BIT(ADCx->CR1, ADC_CR1_EOCIE)
+#  define _START_ADC_SINGLE(ADCx) SET_BIT(ADCx->CR2, ADC_CR2_SWSTART)
+#  define _START_ADC_DMA(ADCx) SET_BIT(ADCx->CR2, ADC_CR2_SWSTART | ADC_CR2_DMA)
+#  define _CLEAR_ADC_STATUS(ADCx) CLEAR_BIT(ADCx->SR, ADC_SR_EOC | ADC_SR_STRT | ADC_SR_OVR)
+#endif
+
 // Max 32 inputs supported
 static uint32_t _adc_input_mask;
 static uint32_t _adc_input_inhibt_mask = 0;
 static volatile uint32_t _adc_inhibit_mask;
 
 // DMA buffers
-static uint16_t _adc_dma_buffer[MAX_ADC_INPUTS] __DMA;
+// static uint16_t _adc_dma_buffer[MAX_ADC_INPUTS] __DMA;
+static uint16_t _adc_dma_buffer[MAX_ADC_INPUTS] __attribute__((__section__(".sram2")));
 
 // ADCs started
 static volatile uint8_t _adc_started_mask;
@@ -95,9 +119,17 @@ bool isVBatBridgeEnabled()
 
 static void adc_enable_clock(ADC_TypeDef* ADCx)
 {
+#if defined(RCC_AHB1ENR_ADC12EN)
+  if (ADCx == ADC3) {
+    LL_AHB4_GRP1_EnableClock(LL_AHB4_GRP1_PERIPH_ADC3);
+  } else {
+    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_ADC12);
+  }
+#else
   uint32_t adc_idx = (((uint32_t) ADCx) - ADC1_BASE) / 0x100UL;
   uint32_t adc_msk = RCC_APB2ENR_ADC1EN << adc_idx;
   LL_APB2_GRP1_EnableClock(adc_msk);
+#endif
 }
 
 static bool adc_disable_dma(DMA_TypeDef* DMAx, uint32_t stream);
@@ -133,24 +165,6 @@ static void adc_init_pins(const stm32_adc_gpio_t* GPIOs, uint8_t n_GPIO)
   }
 }
 
-static const uint32_t _seq_length_lookup[] = {
-  LL_ADC_REG_SEQ_SCAN_DISABLE,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_2RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_3RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_4RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_5RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_6RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_7RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_8RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_9RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_10RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_11RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_12RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_13RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_14RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_15RANKS,
-  LL_ADC_REG_SEQ_SCAN_ENABLE_16RANKS,
-};
 
 static void adc_setup_scan_mode(ADC_TypeDef* ADCx, uint8_t nconv)
 {
@@ -160,31 +174,68 @@ static void adc_setup_scan_mode(ADC_TypeDef* ADCx, uint8_t nconv)
   LL_ADC_InitTypeDef adcInit;
   LL_ADC_StructInit(&adcInit);
 
+  LL_ADC_REG_InitTypeDef adcRegInit;
+  LL_ADC_REG_StructInit(&adcRegInit);
+
+#if !defined(STM32H7)
   if (nconv > 1) {
     adcInit.SequencersScanMode = LL_ADC_SEQ_SCAN_ENABLE;
   } else {
     adcInit.SequencersScanMode = LL_ADC_SEQ_SCAN_DISABLE;
   }
+#endif
 
-  adcInit.DataAlignment = LL_ADC_DATA_ALIGN_RIGHT;  
+#if !defined(STM32H7)
+  adcInit.DataAlignment = LL_ADC_DATA_ALIGN_RIGHT;
+#endif
+
+
+#if defined(STM32H7)
+  /* - Exit from deep-power-down mode and ADC voltage regulator enable        */
+  if (LL_ADC_IsDeepPowerDownEnabled(ADCx) != 0UL)
+  {
+    /* Disable ADC deep power down mode */
+    LL_ADC_DisableDeepPowerDown(ADCx);
+
+    /* System was in deep power down mode, calibration must
+     be relaunched or a previously saved calibration factor
+     re-applied once the ADC voltage regulator is enabled */
+  }
+
+  if (LL_ADC_IsInternalRegulatorEnabled(ADCx) == 0UL)
+  {
+    /* Enable ADC internal voltage regulator */
+    LL_ADC_EnableInternalRegulator(ADCx);
+
+    /* Note: Variable divided by 2 to compensate partially              */
+    /*       CPU processing cycles, scaling in us split to not          */
+    /*       exceed 32 bits register capacity and handle low frequency. */
+    uint32_t wait_loop_index = ((LL_ADC_DELAY_INTERNAL_REGUL_STAB_US / 10UL) *
+                                ((SystemCoreClock / (100000UL * 2UL)) + 1UL));
+    while (wait_loop_index != 0UL) {
+      wait_loop_index--;
+    }
+  }
+#endif
+
+  adcInit.Resolution = LL_ADC_RESOLUTION_12B_OPT;
   LL_ADC_Init(ADCx, &adcInit);
-
-  LL_ADC_REG_InitTypeDef adcRegInit;
-  LL_ADC_REG_StructInit(&adcRegInit);
 
   adcRegInit.TriggerSource = LL_ADC_REG_TRIG_SOFTWARE;
   adcRegInit.ContinuousMode = LL_ADC_REG_CONV_SINGLE;
 
   if (nconv > 1) {
-    adcRegInit.SequencerLength = _seq_length_lookup[nconv - 1];
-    adcRegInit.DMATransfer = LL_ADC_REG_DMA_TRANSFER_UNLIMITED;
+    adcRegInit.SequencerLength = nconv - 1;
+#if defined(STM32H7)
+    adcRegInit.DataTransferMode = LL_ADC_REG_DMA_TRANSFER_LIMITED;
+#else
+    adcRegInit.DMATransfer = LL_ADC_REG_DMA_TRANSFER_LIMITED;
+#endif
   }
 
   LL_ADC_REG_Init(ADCx, &adcRegInit);
 
   // Enable ADC
-  // TODO: check ADC_CR2_DDS (normally only for circular DMA
-  //       but the old was using it (no clue why)
   LL_ADC_Enable(ADCx);  
 }
 
@@ -229,7 +280,7 @@ static uint8_t adc_init_channels(const stm32_adc_t* adc,
     }
     
     // internal channel don't have a GPIO + pin defined
-    uint32_t mask = (1 << (ADC_CHANNEL_ID_MASK & input->ADC_Channel));
+    uint32_t mask = 1 << __LL_ADC_CHANNEL_TO_DECIMAL_NB(input->ADC_Channel);
     if (!__LL_ADC_IS_CHANNEL_INTERNAL(input->ADC_Channel)) {
       uint32_t mode = LL_GPIO_GetPinMode(input->GPIOx, input->GPIO_Pin);
       if (mode != LL_GPIO_MODE_ANALOG) {
@@ -261,6 +312,9 @@ static uint8_t adc_init_channels(const stm32_adc_t* adc,
     LL_ADC_SetChannelSamplingTime(adc->ADCx, input->ADC_Channel,
                                   adc->sample_time);
 
+#if defined(STM32H7)
+    LL_ADC_SetChannelPreselection(adc->ADCx, input->ADC_Channel);
+#endif
     
     nconv--;
     rank++;
@@ -288,7 +342,10 @@ static bool adc_init_dma_stream(ADC_TypeDef* adc, DMA_TypeDef* DMAx,
                          CONVERT_PTR_UINT(dest),
                          LL_DMA_DIRECTION_PERIPH_TO_MEMORY);
   LL_DMA_SetDataLength(DMAx, stream, nconv);
+
+#if !defined(STM32H7)
   LL_DMA_SetChannelSelection(DMAx, stream, channel);
+#endif
 
   // Very high priority, 1 byte transfers, increment memory
   LL_DMA_ConfigTransfer(DMAx, stream,
@@ -300,6 +357,19 @@ static bool adc_init_dma_stream(ADC_TypeDef* adc, DMA_TypeDef* DMAx,
   LL_DMA_EnableFifoMode(DMAx, stream);
   LL_DMA_SetFIFOThreshold(DMAx, stream, LL_DMA_FIFOTHRESHOLD_1_2);
   LL_DMA_SetMemoryBurstxfer(DMAx, stream, LL_DMA_MBURST_INC4);
+
+#if defined(STM32H7)
+  DMAMUX_Channel_TypeDef* dmamux = (adc == ADC3) ? DMAMUX2 : DMAMUX1;
+  uint32_t mux_channel = (DMAx == DMA1)  ? stream
+                         : (adc != ADC3) ? stream + 8
+                                         : stream /* BDMA*/;
+
+  uint32_t req_channel = (adc == ADC1)   ? LL_DMAMUX1_REQ_ADC1
+                         : (adc == ADC2) ? LL_DMAMUX1_REQ_ADC2
+                                         : LL_DMAMUX2_REQ_ADC3;
+
+  LL_DMAMUX_SetRequestID(dmamux, mux_channel, req_channel);
+#endif
 
   return true;
 }
@@ -313,17 +383,25 @@ bool stm32_hal_adc_init(const stm32_adc_t* ADCs, uint8_t n_ADC,
   _adc_oversampling_disabled = 0;
 
   adc_init_pins(ADC_GPIOs, n_GPIO);
+  memset(_adc_dma_buffer, 0, sizeof(_adc_dma_buffer));
+
+#if defined(STM32H7)
+  __HAL_RCC_ADC12_CLK_ENABLE();
+  __HAL_RCC_ADC3_CLK_ENABLE();
+#endif
 
   // Init common to all ADCs
   LL_ADC_CommonInitTypeDef commonInit;
   LL_ADC_CommonStructInit(&commonInit);
 
-  commonInit.CommonClock = LL_ADC_CLOCK_SYNC_PCLK_DIV2;
+  // commonInit.CommonClock = LL_ADC_CLOCK_SYNC_PCLK_DIV4;
+  commonInit.CommonClock = LL_ADC_CLOCK_ASYNC_DIV4;
   LL_ADC_CommonInit(ADC_COMMON, &commonInit);
+  LL_ADC_CommonInit(ADC3_COMMON, &commonInit);
 
   _adc_input_mask = 0;
-  // uint16_t* dma_buffer = _adc_dma_buffer;
   const stm32_adc_t* adc = ADCs;
+
   while (n_ADC > 0) {
 
     uint8_t nconv = adc->n_channels;
@@ -353,8 +431,18 @@ bool stm32_hal_adc_init(const stm32_adc_t* ADCs, uint8_t n_ADC,
         }
       } else {
         // single conversion
+#if defined(STM32H7)
+        if (adc->ADCx == ADC3) {
+          NVIC_SetPriority(ADC3_IRQn, ADC_IRQ_PRIO);
+          NVIC_EnableIRQ(ADC3_IRQn);
+        } else {
+          NVIC_SetPriority(ADC_IRQn, ADC_IRQ_PRIO);
+          NVIC_EnableIRQ(ADC_IRQn);
+        }
+#else
         NVIC_SetPriority(ADC_IRQn, ADC_IRQ_PRIO);
         NVIC_EnableIRQ(ADC_IRQn);
+#endif
       }
     }
 
@@ -388,7 +476,13 @@ static void adc_dma_clear_flags(DMA_TypeDef* DMAx, uint32_t stream)
 
 static inline DMA_Stream_TypeDef* _dma_get_stream(DMA_TypeDef *DMAx, uint32_t Stream)
 {
-  return ((DMA_Stream_TypeDef*)((uint32_t)((uint32_t)DMAx + STREAM_OFFSET_TAB[Stream])));
+#if defined(STM32H7)
+#  define __STREAM_OFFSET_TAB LL_DMA_STR_OFFSET_TAB
+#else
+#  define __STREAM_OFFSET_TAB STREAM_OFFSET_TAB
+#endif
+  return ((DMA_Stream_TypeDef*)((uint32_t)((uint32_t)DMAx + __STREAM_OFFSET_TAB[Stream])));
+#undef __STREAM_OFFSET_TAB
 }
 
 static void adc_start_dma_conversion(ADC_TypeDef* ADCx, DMA_TypeDef* DMAx, uint32_t stream)
@@ -397,8 +491,8 @@ static void adc_start_dma_conversion(ADC_TypeDef* ADCx, DMA_TypeDef* DMAx, uint3
   adc_dma_clear_flags(DMAx, stream);
 
   // Clear ADC status register & disable ADC IRQ
-  CLEAR_BIT(ADCx->SR, ADC_SR_EOC | ADC_SR_STRT | ADC_SR_OVR);
-  CLEAR_BIT(ADCx->CR1, ADC_CR1_EOCIE);
+  _CLEAR_ADC_STATUS(ADCx);
+  _DISABLE_EOCIE(ADCx);
 
   // Enable DMA
   auto dma_stream = _dma_get_stream(DMAx, stream);
@@ -406,11 +500,14 @@ static void adc_start_dma_conversion(ADC_TypeDef* ADCx, DMA_TypeDef* DMAx, uint3
   SET_BIT(dma_stream->CR, DMA_SxCR_EN);
 
   // Trigger ADC start
-  SET_BIT(ADCx->CR2, ADC_CR2_DMA | ADC_CR2_SWSTART);
+  _START_ADC_DMA(ADCx);
 }
 
 static bool adc_disable_dma(DMA_TypeDef* DMAx, uint32_t stream)
 {
+  auto dma_stream = _dma_get_stream(DMAx, stream);
+  CLEAR_BIT(dma_stream->CR, DMA_SxCR_TCIE | DMA_SxCR_TEIE | DMA_SxCR_DMEIE);
+  
   LL_DMA_DisableStream(DMAx, stream);
 
   // wait until DMA EN bit gets cleared by hardware
@@ -427,13 +524,13 @@ static bool adc_disable_dma(DMA_TypeDef* DMAx, uint32_t stream)
 static void adc_start_normal_conversion(ADC_TypeDef* ADCx)
 {
   // clear status flags
-  CLEAR_BIT(ADCx->SR, ADC_SR_EOC | ADC_SR_STRT | ADC_SR_OVR);
+  _CLEAR_ADC_STATUS(ADCx);
 
   // enble ADC IRQ
-  SET_BIT(ADCx->CR1, ADC_CR1_EOCIE);
+  _ENABLE_EOCIE(ADCx);
 
   // and start!
-  SET_BIT(ADCx->CR2, ADC_CR2_SWSTART);
+  _START_ADC_SINGLE(ADCx);
 }
 
 static void adc_start_read(const stm32_adc_t* ADCs, uint8_t n_ADC)
@@ -455,8 +552,14 @@ static void adc_start_read(const stm32_adc_t* ADCs, uint8_t n_ADC)
     }
 
     // more than one channel enabled on this ADC
-    if (LL_ADC_GetSequencersScanMode(ADCx) == LL_ADC_SEQ_SCAN_ENABLE) {
+    bool seq_mode_enabled = false;
+#if defined(STM32H7)
+    seq_mode_enabled = (LL_ADC_REG_GetSequencerLength(ADCx) != LL_ADC_REG_SEQ_SCAN_DISABLE);
+#else
+    seq_mode_enabled = (LL_ADC_GetSequencersScanMode(ADCx) == LL_ADC_SEQ_SCAN_ENABLE);
+#endif
 
+    if (seq_mode_enabled) {
       // Disable DMA before continuing (see ref. manual "Stream configuration procedure")
       auto DMAx = adc->DMAx;
       auto stream = adc->DMA_Stream;
@@ -582,8 +685,10 @@ void stm32_hal_adc_dma_isr(const stm32_adc_t* adc)
   // Disable IRQ
   adc_dma_clear_flags(adc->DMAx, adc->DMA_Stream);
 
+#if !defined(STM32H7)
   // Disable DMA
   CLEAR_BIT(adc->ADCx->CR2, ADC_CR2_DMA);
+#endif
 
   uint16_t* dma_buffer = _adc_dma_buffer + adc->offset;
   copy_adc_values(dma_buffer, adc, _adc_inputs);
@@ -595,11 +700,16 @@ void stm32_hal_adc_isr(const stm32_adc_t* adc)
 {
   // check if this ADC triggered the IRQ
   auto ADCx = adc->ADCx;
+#if defined(STM32H7)
+  if (!LL_ADC_IsActiveFlag_EOC(ADCx) || !LL_ADC_IsEnabledIT_EOC(ADCx))
+    return;
+#else
   if (!LL_ADC_IsActiveFlag_EOCS(ADCx) || !LL_ADC_IsEnabledIT_EOCS(ADCx))
     return;
+#endif
 
   // Disable end-of-conversion IRQ
-  CLEAR_BIT(ADCx->CR1, ADC_CR1_EOCIE);
+  _DISABLE_EOCIE(ADCx);
 
   uint16_t* dma_buffer = _adc_dma_buffer + adc->offset;
   *dma_buffer = adc->ADCx->DR;

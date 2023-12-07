@@ -1,5 +1,5 @@
 /*
- * Copyright (C) EdgeTX
+ * Copyright (C) EdgeTx
  *
  * Based on code named
  *   opentx - https://github.com/opentx/opentx
@@ -19,21 +19,13 @@
  * GNU General Public License for more details.
  */
 
-#pragma once
+#include "stm32h_dma.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-  #if defined(STM32F4)
-    #include "CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h"
-    #include "stm32f4xx_hal.h"
-  #elif defined(STM32F2)
-    #include "CMSIS/Device/ST/STM32F2xx/Include/stm32f2xx.h"
-    #include "stm32f2xx_hal.h"
-  #elif defined(STM32H7)
-    #include "CMSIS/Device/ST/STM32H7xx/Include/stm32h7xx.h"
-    #include "stm32h7xx_hal.h"
-  #endif
-#ifdef __cplusplus
+void stm32_dma_enable_clock(DMA_TypeDef* DMAx)
+{
+  if (DMAx == DMA1) {
+    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
+  } else if (DMAx == DMA2) {
+    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA2);
+  }
 }
-#endif
