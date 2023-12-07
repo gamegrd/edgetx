@@ -19,8 +19,15 @@
  * GNU General Public License for more details.
  */
 
+#if !defined(SIMU)
 #include "stm32_hal_ll.h"
 #include "stm32_timer.h"
+#include "stm32_i2c_driver.h"
+# if defined(FIRMWARE_QSPI)
+#   include "stm32_qspi.h"
+# endif
+#endif
+
 #include "hal/usb_driver.h"
 
 #if defined(BLUETOOTH)
@@ -54,7 +61,11 @@
   #define SECONDARY_BOOTLOADER_KEYS       0x1200
 #endif
 
+#ifdef FIRMWARE_QSPI
+#define APP_START_ADDRESS               (uint32_t)(FIRMWARE_ADDRESS)
+#else
 #define APP_START_ADDRESS               (uint32_t)(FIRMWARE_ADDRESS + BOOTLOADER_SIZE)
+#endif
 
 #if defined(EEPROM) || defined(SPI_FLASH)
   #define MAIN_MENU_LEN 3
@@ -67,15 +78,31 @@
   #define SEL_CLEAR_FLASH_STORAGE_MENU_LEN 2
 #endif
 
+extern "C" void SystemClock_Config();
 typedef void (*voidFunction)(void);
 
-#define jumpTo(addr) do {                                       \
-        SCB->VTOR = addr;                                       \
-        __set_MSP(*(__IO uint32_t*)addr);                       \
-        uint32_t     jumpAddress = *(uint32_t*)(addr + 4);      \
-        voidFunction jumpFn = (voidFunction)jumpAddress;        \
-        jumpFn();                                               \
-    } while(0)
+#if defined(FIRMWARE_QSPI)
+__attribute__((section(".isrvec"))) void* isrvec[256];
+#define jumpTo(addr)                                                       \
+  do {                                                                     \
+    for (int i = 0; i < 256; ++i) isrvec[i] = (void*)((uint32_t*)addr)[i]; \
+    SCB_CleanDCache();                                                     \
+    SCB->VTOR = (intptr_t)&isrvec[0];                                      \
+    __set_MSP(*(__IO uint32_t*)addr);                                      \
+    uint32_t jumpAddress = *(uint32_t*)(addr + 4);                         \
+    voidFunction jumpFn = (voidFunction)jumpAddress;                       \
+    jumpFn();                                                              \
+  } while (0)
+#else
+#define jumpTo(addr)                                 \
+  do {                                               \
+    SCB->VTOR = addr;                                \
+    __set_MSP(*(__IO uint32_t*)addr);                \
+    uint32_t jumpAddress = *(uint32_t*)(addr + 4);   \
+    voidFunction jumpFn = (voidFunction)jumpAddress; \
+    jumpFn();                                        \
+  } while (0)
+#endif
 
 #if !defined(SIMU)
 // Bootloader marker:
@@ -178,10 +205,24 @@ int menuFlashFile(uint32_t index, event_t event)
 void flashWriteBlock()
 {
   uint32_t blockOffset = 0;
-  while (BlockCount) {
 #if !defined(SIMU)
+#ifdef FIRMWARE_QSPI
+  while(BlockCount)
+  {
+    qspiWriteBlock((intptr_t)firmwareAddress, &Block_buffer[blockOffset]);
+    blockOffset += 4096;
+    firmwareAddress += 4096;
+    if (BlockCount > 4096) {
+      BlockCount -= 4096;
+    }
+    else {
+      BlockCount = 0;
+    }
+  }
+
+#else
+  while (BlockCount) {
     flashWrite((uint32_t *)firmwareAddress, (uint32_t *)&Block_buffer[blockOffset]);
-#endif
     blockOffset += FLASH_PAGESIZE;
     firmwareAddress += FLASH_PAGESIZE;
     if (BlockCount > FLASH_PAGESIZE) {
@@ -191,6 +232,8 @@ void flashWriteBlock()
       BlockCount = 0;
     }
   }
+#endif
+#endif // SIMU
 }
 
 #if defined(EEPROM)
@@ -204,11 +247,16 @@ void writeEepromBlock()
 #if !defined(SIMU)
 void bootloaderInitApp()
 {
-  LL_AHB1_GRP1_EnableClock(LCD_RCC_AHB1Periph);
+  // TODO: really needed?
+  __HAL_RCC_DMA2D_CLK_ENABLE();
+  __HAL_RCC_LTDC_CLK_ENABLE();
+  __HAL_RCC_SYSCFG_CLK_ENABLE();
+
+  // LL_AHB1_GRP1_EnableClock(LCD_RCC_AHB1Periph);
 #if defined(LCD_RCC_APB2Periph)
-  LL_APB2_GRP1_EnableClock(LCD_RCC_APB2Periph);
+  // LL_APB2_GRP1_EnableClock(LCD_RCC_APB2Periph);
 #endif
-  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+  // LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
 
 
 #if defined(HAVE_BOARD_BOOTLOADER_INIT)
@@ -225,7 +273,7 @@ void bootloaderInitApp()
   // wait a bit for the inputs to stabilize...
   if (!WAS_RESET_BY_WATCHDOG_OR_SOFTWARE()) {
     for (uint32_t i = 0; i < 150000; i++) {
-      __ASM volatile ("nop");
+      __ASM volatile("nop");
     }
   }
 
@@ -237,26 +285,40 @@ void bootloaderInitApp()
 #if defined(SECONDARY_BOOTLOADER_KEYS)
   if (readTrims() != BOOTLOADER_KEYS && readTrims() != SECONDARY_BOOTLOADER_KEYS) {
 #else
+
   if (readTrims() != BOOTLOADER_KEYS) {
 #endif
 #endif
     // TODO: deInit before restarting
     // Start main application
+    __disable_irq();
+#if defined(FIRMWARE_QSPI)
+    void qspiInit();
+    qspiInit();
+    qspiEnableMemoryMappedMode();
+#endif
     jumpTo(APP_START_ADDRESS);
   }
 
-  pwrOn();
+// pwrOn();
 
-#if defined(ROTARY_ENCODER_NAVIGATION) && !defined(USE_HATS_AS_KEYS)
-  rotaryEncoderInit();
-#endif
+// #if defined(ROTARY_ENCODER_NAVIGATION) && !defined(USE_HATS_AS_KEYS)
+//   rotaryEncoderInit();
+// #endif
 
+  // TODO: move this to board init
+  SystemClock_Config();
+  
   delaysInit(); // needed for lcdInit()
 
 #if defined(DEBUG)
   initSerialPorts();
 #endif
 
+#if defined(SDRAM)
+  SDRAM_Init();
+#endif
+  
   __enable_irq();
 
   TRACE("\nBootloader started :)");
@@ -275,6 +337,8 @@ void bootloaderInitApp()
   // SD card detect pin
   sdInit();
   usbInit();
+  void qspiInit();
+  qspiInit();
 }
 
 int main()
@@ -460,8 +524,13 @@ int  bootloaderMain()
           // confirmed
 
           if (memoryType == MEM_FLASH) {
+#ifdef FIRMWARE_QSPI
+            firmwareSize = binFiles[vpos].size ;
+            firmwareAddress = 0;
+#else
             firmwareSize = binFiles[vpos].size - BOOTLOADER_SIZE;
             firmwareAddress = FIRMWARE_ADDRESS + BOOTLOADER_SIZE;
+#endif
             firmwareWritten = 0;
           }
 #if defined(EEPROM)
@@ -470,16 +539,21 @@ int  bootloaderMain()
             eepromWritten = 0;
           }
 #endif
+#ifdef FIRMWARE_QSPI
           state = ST_FLASHING;
+#else
+          state = ST_FLASHING;
+#endif
         }
       }
       else if (state == ST_FLASHING) {
+#ifndef FIRMWARE_QSPI
         // commit to flashing
         if (!unlocked && (memoryType == MEM_FLASH)) {
           unlocked = 1;
           unlockFlash();
         }
-
+#endif
         int progress = 0;
         if (memoryType == MEM_FLASH) {
           flashWriteBlock();
@@ -500,7 +574,11 @@ int  bootloaderMain()
         if (BlockCount == 0) {
           state = ST_FLASH_DONE; // EOF
         }
+#ifdef FIRMWARE_QSPI
+        else if (memoryType == MEM_FLASH && firmwareWritten >= FLASHSIZE) {
+#else
         else if (memoryType == MEM_FLASH && firmwareWritten >= FLASHSIZE - BOOTLOADER_SIZE) {
+#endif
           state = ST_FLASH_DONE; // Backstop
         }
 #if defined(EEPROM)
@@ -549,11 +627,12 @@ int  bootloaderMain()
       }
 
       if (state == ST_FLASH_DONE) {
+#ifdef FIRMWARE_QSPI
         if (unlocked) {
           lockFlash();
           unlocked = 0;
         }
-
+#endif
         if (event == EVT_KEY_BREAK(KEY_EXIT) || event == EVT_KEY_BREAK(KEY_ENTER)) {
           state = ST_START;
           vpos = 0;
@@ -592,6 +671,6 @@ int  bootloaderMain()
   return 0;
 }
 
-#if !defined(SIMU) && (defined(PCBHORUS) || defined(PCBFLYSKY))
+#if !defined(SIMU) && (defined(PCBHORUS) || defined(PCBFLYSKY) || defined(STM32H747xx))
 void *__dso_handle = nullptr;
 #endif

@@ -1325,6 +1325,7 @@ void edgeTxInit()
   startSplash();
 
 #if defined(HARDWARE_TOUCH) && !defined(PCBFLYSKY) && !defined(SIMU)
+  extern void touchPanelInit();
   touchPanelInit();
 #endif
 
@@ -1423,7 +1424,7 @@ void edgeTxInit()
 #if defined(COLORLCD) && defined(LUA)
   if (!UNEXPECTED_SHUTDOWN()) {
     // lua widget state must be prepared before the call to storageReadAll()
-    luaInitThemesAndWidgets();
+ //   luaInitThemesAndWidgets();
   }
 #endif
 
