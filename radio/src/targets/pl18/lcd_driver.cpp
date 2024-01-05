@@ -927,7 +927,6 @@ void LCD_ILI9488_On(void) {
 }
 
 void LCD_ILI9488_Init(void) {
-
   // lcdWriteCommand(0xFB);
   // lcdWriteData(0x00);
 
@@ -1164,7 +1163,12 @@ void LCD_ST7796S_Init(void) {
   lcdWriteData( 0x3F );
 
   lcdWriteCommand( 0x3A );
+#if defined(RADIO_T15)
+  lcdWriteData( 0x55 );
+#else
   lcdWriteData( 0x66 );
+#endif
+
 
   //SET RGB STRAT
   lcdWriteCommand (0xB0 );   //SET HS VS DE CLK 上升还是下降有效
@@ -1252,10 +1256,11 @@ void LCD_ST7796S_Init(void) {
 
   delay_ms(120);
 
+#if !defined(RADIO_T15)
   if( !TouchControllerType ) {
     lcdWriteCommand( 0x21 );
   }
-
+#endif
   LCD_ST7796S_On();
 }
 

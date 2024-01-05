@@ -63,18 +63,24 @@ set(GUI_SRC
   view_statistics.cpp
   view_text.cpp
   widget_settings.cpp
-  widget.cpp
-  widgets_setup.cpp
-  curve_param.cpp
-  curveedit.cpp
-  fm_matrix.cpp
-  gvar_numberedit.cpp
-  input_edit_adv.cpp
-  input_edit.cpp
-  input_source.cpp
-  mixer_edit_adv.cpp
-  mixer_edit.cpp
-  model_curves.cpp
+  ${THEMES_SRC}
+  ${LAYOUTS_SRC}
+  ${WIDGETS_SRC}
+  draw_functions.cpp
+  menu_model.cpp
+  model_select.cpp
+  bind_menu_d16.cpp
+  trainer_setup.cpp
+  custom_failsafe.cpp
+  ppm_settings.cpp
+  channel_range.cpp
+  module_setup.cpp
+  timer_setup.cpp
+  trims_setup.cpp
+  throttle_params.cpp
+  preflight_checks.cpp
+  function_switches.cpp
+  model_setup.cpp
   model_flightmodes.cpp
   model_gvars.cpp
   model_inputs.cpp
@@ -108,6 +114,7 @@ set(GUI_SRC
   radio_hardware.cpp
   radio_sdmanager.cpp
   radio_setup.cpp
+  radio_diagcustscwitches.cpp
   radio_theme.cpp
   radio_tools.cpp
   radio_trainer.cpp

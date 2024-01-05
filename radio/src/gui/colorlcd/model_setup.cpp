@@ -33,6 +33,9 @@
 #include "trims_setup.h"
 #include "throttle_params.h"
 #include "preflight_checks.h"
+#if defined(FUNCTION_SWITCHES)
+#include "function_switches.h"
+#endif
 #include "throttle_params.h"
 #include "timer_setup.h"
 #include "trainer_setup.h"
@@ -483,6 +486,11 @@ void ModelSetupPage::build(Window * window)
 #if defined(USBJ_EX)
   new SubScreenButton(line, STR_USBJOYSTICK_LABEL,
                       []() { new ModelUSBJoystickPage(); });
+#endif
+
+#if defined(FUNCTION_SWITCHES)
+  auto btn = new SubScreenButton(line, STR_FUNCTION_SWITCHES, []() { new ModelFunctionSwitches(); });
+  lv_obj_set_grid_cell(btn->getLvObj(), LV_GRID_ALIGN_STRETCH, 2, 1, LV_GRID_ALIGN_CENTER, 0, 1);
 #endif
 
   new SubScreenButton(line, STR_MENU_OTHER, []() { new ModelOtherOptions(); });
