@@ -153,6 +153,7 @@
 #endif
 
 #if defined(PCBX10)
+#if !defined(RADIO_F16)
   // Gimbal switch left
   #define STORAGE_SWITCH_I
   #define HARDWARE_SWITCH_I
@@ -163,6 +164,7 @@
   #define HARDWARE_SWITCH_J
   #define SWITCHES_GPIO_REG_J           GPIOH
   #define SWITCHES_GPIO_PIN_J           LL_GPIO_PIN_15 // PH.15
+#endif
 #elif defined(PCBX12S)
   // Gimbal switch left
   #define STORAGE_SWITCH_I
