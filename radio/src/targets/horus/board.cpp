@@ -51,7 +51,7 @@
 HardwareOptions hardwareOptions;
 bool boardBacklightOn = false;
 
-#if defined(RADIO_F16)
+#if defined(VIDEO_SWITCH)
 #include "videoswitch_driver.h"
 
 void boardBootloaderInit()
@@ -123,7 +123,7 @@ void boardInit()
   bluetoothInit(BLUETOOTH_DEFAULT_BAUDRATE, true);
 #endif
 
-#if defined(RADIO_F16)
+#if defined(VIDEO_SWITCH)
   videoSwitchInit();
 #endif
 
