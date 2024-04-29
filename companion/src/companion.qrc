@@ -261,6 +261,17 @@
     <file>images/simulator/JumperT14/left.png</file>
     <file>images/simulator/JumperT14/right.png</file>
     <file>images/simulator/JumperT14/top.png</file>
+    <file>images/simulator/JumperT15/left.png</file>
+    <file>images/simulator/JumperT15/right.png</file>
+    <file>images/simulator/JumperT15/top.png</file>
+    <file>images/simulator/JumperT15/bottom.png</file>
+    <file>images/simulator/JumperT15/left_mdl.png</file>
+    <file>images/simulator/JumperT15/left_page.png</file>
+    <file>images/simulator/JumperT15/left_scrnsht.png</file>
+    <file>images/simulator/JumperT15/left_sys.png</file>
+    <file>images/simulator/JumperT15/left_tele.png</file>
+    <file>images/simulator/JumperT15/right_ent.png</file>
+    <file>images/simulator/JumperT15/right_rtn.png</file>
     <file>images/simulator/JumperT16/left.png</file>
     <file>images/simulator/JumperT16/right.png</file>
     <file>images/simulator/JumperT16/top.png</file>
