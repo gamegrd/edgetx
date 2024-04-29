@@ -46,34 +46,34 @@ const std::string edgetx_fs_manual_url = "https://edgetx.gitbook.io/edgetx-user-
 
 ModelFunctionSwitches::ModelFunctionSwitches() : Page(ICON_MODEL_SETUP)
 {
-  header.setTitle(STR_MENU_MODEL_SETUP);
-  header.setTitle2(STR_MENU_FSWITCH);
+  header->setTitle(STR_MENU_MODEL_SETUP);
+  header->setTitle2(STR_MENU_FSWITCH);
 
-  body.padAll(4);
-  lv_obj_set_scrollbar_mode(body.getLvObj(), LV_SCROLLBAR_MODE_AUTO);
+  body->padAll(PAD_SMALL);
+  lv_obj_set_scrollbar_mode(body->getLvObj(), LV_SCROLLBAR_MODE_AUTO);
 
-  auto form = new FormWindow(&body, rect_t{});
+  auto form = new Window(body, rect_t{});
   form->setFlexLayout();
-  form->padAll(0);
+  form->padAll(PAD_ZERO);
 
-  FlexGridLayout grid1(line_col_dsc1, line_row_dsc, 2);
-  FlexGridLayout grid2(line_col_dsc2, line_row_dsc, 2);
-  FlexGridLayout grid3(line_col_dsc3, line_row_dsc, 2);
+  FlexGridLayout grid1(line_col_dsc1, line_row_dsc, PAD_TINY);
+  FlexGridLayout grid2(line_col_dsc2, line_row_dsc, PAD_TINY);
+  FlexGridLayout grid3(line_col_dsc3, line_row_dsc, PAD_TINY);
 
-  auto line = form->newLine(&grid2);
-  new StaticText(line, rect_t{}, STR_SWITCHES, 0, COLOR_THEME_PRIMARY1);
-  new StaticText(line, rect_t{}, STR_NAME, 0, COLOR_THEME_PRIMARY1|FONT(XS));
-  new StaticText(line, rect_t{}, STR_SWITCH_TYPE, 0, COLOR_THEME_PRIMARY1|FONT(XS));
-  new StaticText(line, rect_t{}, STR_SWITCH_GROUP, 0, COLOR_THEME_PRIMARY1|FONT(XS));
-  new StaticText(line, rect_t{}, STR_SWITCH_STARTUP, 0, COLOR_THEME_PRIMARY1|FONT(XS));
+  auto line = form->newLine(grid2);
+  new StaticText(line, rect_t{}, STR_SWITCHES);
+  new StaticText(line, rect_t{}, STR_NAME, FONT(XS));
+  new StaticText(line, rect_t{}, STR_SWITCH_TYPE, FONT(XS));
+  new StaticText(line, rect_t{}, STR_SWITCH_GROUP, FONT(XS));
+  new StaticText(line, rect_t{}, STR_SWITCH_STARTUP, FONT(XS));
 
   for (uint8_t i = 0; i < NUM_FUNCTIONS_SWITCHES; i += 1) {
-    line = form->newLine(&grid2);
+    line = form->newLine(grid2);
 
     std::string s(STR_CHAR_SWITCH);
     s += switchGetName(i+switchGetMaxSwitches());
 
-    (new StaticText(line, rect_t{}, s, 0, COLOR_THEME_PRIMARY1))->padLeft(8);
+    (new StaticText(line, rect_t{}, s))->padLeft(8);
 
     auto nameEdit = new ModelTextEdit(line, rect_t(), g_model.switchNames[i], LEN_SWITCH_NAME);
     nameEdit->setWidth(80);
@@ -109,12 +109,12 @@ ModelFunctionSwitches::ModelFunctionSwitches() : Page(ICON_MODEL_SETUP)
                });
   }
 
-  line = form->newLine(&grid1);
+  line = form->newLine(grid1);
   line->padTop(10);
 
-  new StaticText(line, rect_t{}, STR_GROUPS, 0, COLOR_THEME_PRIMARY1);
+  new StaticText(line, rect_t{}, STR_GROUPS);
 
-  line = form->newLine(&grid3);
+  line = form->newLine(grid3);
   line->padLeft(50);
   line->padBottom(10);
 
@@ -128,12 +128,12 @@ ModelFunctionSwitches::ModelFunctionSwitches() : Page(ICON_MODEL_SETUP)
     btn->check(IS_FSWITCH_GROUP_ON(i));
   }
 
-  line = form->newLine(&grid1);
+  line = form->newLine(grid1);
   line->padBottom(10);
 
-  new StaticText(line, rect_t{}, STR_MORE_INFO, 0, COLOR_THEME_PRIMARY1);
+  new StaticText(line, rect_t{}, STR_MORE_INFO);
 
-  line = form->newLine(&grid1);
+  line = form->newLine(grid1);
   line->padBottom(10);
   line->padLeft((width() - 150) / 2);
 

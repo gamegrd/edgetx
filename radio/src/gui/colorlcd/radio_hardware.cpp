@@ -227,13 +227,11 @@ void RadioHardwarePage::build(Window* window)
     new RadioKeyDiagsPage();
     return 0;
   });
-  lv_obj_set_style_min_width(btn->getLvObj(), LV_DPI_DEF, 0);
 
 #if defined(FUNCTION_SWITCHES)
-  btn = new TextButton(box, rect_t{}, STR_FS_BTN, [=]() -> uint8_t {
+  new TextButton(box, rect_t{0, 0, 200, 0}, STR_FS_BTN, [=]() -> uint8_t {
     new RadioCustSwitchesDiagsPage();
     return 0;
   });
-  lv_obj_set_style_min_width(btn->getLvObj(), LV_DPI_DEF, 0);
 #endif
 }

@@ -482,16 +482,23 @@ void ModelSetupPage::build(Window * window)
 
   new SubScreenButton(line, STR_ENABLED_FEATURES,
                       []() { new ModelViewOptions(); });
+  int cnt = 1;
 
 #if defined(USBJ_EX)
   new SubScreenButton(line, STR_USBJOYSTICK_LABEL,
                       []() { new ModelUSBJoystickPage(); });
+  cnt += 1;
 #endif
 
 #if defined(FUNCTION_SWITCHES)
-  auto btn = new SubScreenButton(line, STR_FUNCTION_SWITCHES, []() { new ModelFunctionSwitches(); });
-  lv_obj_set_grid_cell(btn->getLvObj(), LV_GRID_ALIGN_STRETCH, 2, 1, LV_GRID_ALIGN_CENTER, 0, 1);
+  new SubScreenButton(line, STR_FUNCTION_SWITCHES, []() { new ModelFunctionSwitches(); });
+  cnt += 1;
 #endif
+
+  if (cnt == 3) {
+    line = window->newLine(grid2);
+    line->padTop(2);
+  }
 
   new SubScreenButton(line, STR_MENU_OTHER, []() { new ModelOtherOptions(); });
 }

@@ -712,7 +712,7 @@ int OpenTxFirmware::getCapability(::Capability capability)
     case LcdHeight:
       if (IS_FLYSKY_NV14(board) || IS_FLYSKY_EL18(board))
         return 480;
-      else if (IS_FLYSKY_PL18(board))
+      else if (IS_FLYSKY_PL18(board) || IS_JUMPER_T15(board))
         return 320;
       else if (IS_FAMILY_HORUS_OR_T16(board))
         return 272;
@@ -1436,7 +1436,7 @@ void registerOpenTxFirmwares()
   addOpenTxRfOptions(firmware, FLEX);
 
   /* Jumper T15 board */
-  firmware = new OpenTxFirmware(FIRMWAREID("t16"), Firmware::tr("Jumper T15"), BOARD_JUMPER_T15);
+  firmware = new OpenTxFirmware(FIRMWAREID("t15"), Firmware::tr("Jumper T15"), BOARD_JUMPER_T15);
   addOpenTxFrskyOptions(firmware);
   firmware->addOption("bluetooth", Firmware::tr("Support for bluetooth module"));
   addOpenTxRfOptions(firmware, FLEX);
