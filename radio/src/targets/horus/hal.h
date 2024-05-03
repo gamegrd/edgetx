@@ -171,20 +171,20 @@
   #define FUNCTION_SWITCH_3             SI
   #define STORAGE_SWITCH_I
   #define HARDWARE_SWITCH_I
-  #define SWITCHES_GPIO_REG_I           GPIOG
-  #define SWITCHES_GPIO_PIN_I           LL_GPIO_PIN_13 // PG.13
+  #define SWITCHES_GPIO_REG_I           GPIOJ
+  #define SWITCHES_GPIO_PIN_I           LL_GPIO_PIN_7  // PJ.07
   //SW4
   #define FUNCTION_SWITCH_4             SJ
   #define STORAGE_SWITCH_J
   #define HARDWARE_SWITCH_J
-  #define SWITCHES_GPIO_REG_J           GPIOJ
-  #define SWITCHES_GPIO_PIN_J           LL_GPIO_PIN_7 // PJ.07
+  #define SWITCHES_GPIO_REG_J           GPIOG
+  #define SWITCHES_GPIO_PIN_J           LL_GPIO_PIN_13 // PG.13
   //SW5
   #define FUNCTION_SWITCH_5             SK
   #define STORAGE_SWITCH_K
   #define HARDWARE_SWITCH_K
   #define SWITCHES_GPIO_REG_K           GPIOJ
-  #define SWITCHES_GPIO_PIN_K           LL_GPIO_PIN_5  // PJ.08
+  #define SWITCHES_GPIO_PIN_K           LL_GPIO_PIN_8  // PJ.08
   //SW6
   #define FUNCTION_SWITCH_6             SL
   #define STORAGE_SWITCH_L
@@ -582,10 +582,10 @@
 #define FSLED_GPIO_PIN_1              GPIO_Pin_15 //PA.15
 #define FSLED_GPIO_2                  GPIOC
 #define FSLED_GPIO_PIN_2              GPIO_Pin_5  //PC.05
-#define FSLED_GPIO_3                  GPIOG
-#define FSLED_GPIO_PIN_3              GPIO_Pin_11 //PG.11
-#define FSLED_GPIO_4                  GPIOH
-#define FSLED_GPIO_PIN_4              GPIO_Pin_13 //PH.13
+#define FSLED_GPIO_3                  GPIOH
+#define FSLED_GPIO_PIN_3              GPIO_Pin_13 //PH.13
+#define FSLED_GPIO_4                  GPIOG
+#define FSLED_GPIO_PIN_4              GPIO_Pin_11 //PG.11
 #define FSLED_GPIO_5                  GPIOC
 #define FSLED_GPIO_PIN_5              GPIO_Pin_3  //PC.03
 #define FSLED_GPIO_6                  GPIOC
