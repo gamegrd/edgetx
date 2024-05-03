@@ -1108,15 +1108,12 @@
 #if defined(RADIO_T15)
 #define LCD_W                          480
 #define LCD_H                          320
-#define LCD_PHYS_H                     LCD_H
-#define LCD_PHYS_W                     LCD_W
-#define LCD_DEPTH                      16
 #else
 #define LCD_W                          480
 #define LCD_H                          272
+#endif
 #define LCD_PHYS_H                     LCD_H
 #define LCD_PHYS_W                     LCD_W
 #define LCD_DEPTH                      16
-#endif
 
 #endif // _HAL_H_
