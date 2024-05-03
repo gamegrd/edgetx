@@ -36,12 +36,9 @@
 
 volatile static bool touchEventOccured;
 
-#define FT6x06_MAX_INSTANCE  1
-
-#define TOUCH_FT6236_I2C_ADDRESS          (0x70>>1)
 #define TOUCH_CST836U_I2C_ADDRESS         (0x15)
 
-enum TouchControllers {TC_NONE, TC_FT6236, TC_CST836U};
+enum TouchControllers {TC_NONE, TC_CST836U};
 TouchControllers touchController = TC_NONE;
 
 static tc_handle_TypeDef tc_handle = {0, 0};
@@ -166,88 +163,6 @@ static uint16_t TS_IO_ReadMultiple(uint8_t addr, uint8_t reg, uint8_t * buffer, 
   return 1;
 }
 
-static void touch_ft6236_debug_info(void)
-{
-#if defined(DEBUG)
-  TRACE("ft6x36: thrhld = %d", TS_IO_Read(TOUCH_FT6236_I2C_ADDRESS, TOUCH_FT6236_REG_TH_GROUP) * 4);
-  TRACE("ft6x36: rep rate=", TS_IO_Read(TOUCH_FT6236_I2C_ADDRESS, TOUCH_FT6236_REG_PERIODACTIVE) * 10);
-  TRACE("ft6x36: fw lib 0x%02X %02X", TS_IO_Read(TOUCH_FT6236_I2C_ADDRESS, TOUCH_FT6236_REG_LIB_VER_H), TS_IO_Read(TOUCH_FT6236_I2C_ADDRESS, TOUCH_FT6236_REG_LIB_VER_L));
-  TRACE("ft6x36: fw v 0x%02X", TS_IO_Read(TOUCH_FT6236_I2C_ADDRESS, TOUCH_FT6236_REG_FIRMID));
-  TRACE("ft6x36: CHIP ID 0x%02X", TS_IO_Read(TOUCH_FT6236_I2C_ADDRESS, TOUCH_FT6236_REG_CIPHER));
-  TRACE("ft6x36: CTPM ID 0x%02X", TS_IO_Read(TOUCH_FT6236_I2C_ADDRESS, TOUCH_FT6236_REG_FOCALTECH_ID));
-  TRACE("ft6x36: rel code 0x%02X", TS_IO_Read(TOUCH_FT6236_I2C_ADDRESS, TOUCH_FT6236_REG_RELEASE_CODE_ID));
-#endif
-}
-
-/**
- * @brief  Return if there is touches detected or not.
- *         Try to detect new touches and forget the old ones (reset internal global
- *         variables).
- * @param  DeviceAddr: Device address on communication Bus.
- * @retval : Number of active touches detected (can be 0, 1 or 2).
- */
-static uint8_t ft6x06_TS_DetectTouch()
-{
-  volatile uint8_t nbTouch = 0;
-
-  /* Read register FT6206_TD_STAT_REG to check number of touches detection */
-  nbTouch = TS_IO_Read(TOUCH_FT6236_I2C_ADDRESS, FT6206_TD_STAT_REG);
-  nbTouch &= FT6206_TD_STAT_MASK;
-  if (nbTouch > FT6206_MAX_DETECTABLE_TOUCH) {
-    /* If invalid number of touch detected, set it to zero */
-    nbTouch = 0;
-  }
-  /* Update ft6x06 driver internal global : current number of active touches */
-  tc_handle.currActiveTouchNb = nbTouch;
-
-  /* Reset current active touch index on which to work on */
-  tc_handle.currActiveTouchIdx = 0;
-  return (nbTouch);
-}
-
-/**
- * @brief  Get the touch screen X and Y positions values
- *         Manage multi touch thanks to touch Index global
- *         variable 'tc_handle.currActiveTouchIdx'.
- * @param  DeviceAddr: Device address on communication Bus.
- * @param  X: Pointer to X position value
- * @param  Y: Pointer to Y position value
- * @retval None.
- */
-static void ft6x06_TS_GetXY(uint16_t * X, uint16_t * Y, uint32_t * event)
-{
-  uint8_t regAddress = 0;
-  uint8_t dataxy[4];
-
-  if (tc_handle.currActiveTouchIdx < tc_handle.currActiveTouchNb) {
-    switch (tc_handle.currActiveTouchIdx) {
-      case 0 :
-        regAddress = FT6206_P1_XH_REG;
-        break;
-      case 1 :
-        regAddress = FT6206_P2_XH_REG;
-        break;
-
-      default :
-        break;
-    }
-
-    /* Read X and Y positions */
-    TS_IO_ReadMultiple(TOUCH_FT6236_I2C_ADDRESS, regAddress, dataxy, sizeof(dataxy));
-    /* Send back ready X position to caller */
-    *X = ((dataxy[0] & FT6206_MSB_MASK) << 8) | (dataxy[1] & FT6206_LSB_MASK);
-    /* Send back ready Y position to caller */
-    *Y = ((dataxy[2] & FT6206_MSB_MASK) << 8) | (dataxy[3] & FT6206_LSB_MASK);
-
-    *event = (dataxy[0] & FT6206_TOUCH_EVT_FLAG_MASK) >> FT6206_TOUCH_EVT_FLAG_SHIFT;
-    /*
-    uint32_t weight;
-    uint32_t area;
-    ft6x06_TS_GetTouchInfo(DeviceAddr, ft6x06_handle.currActiveTouchIdx, &weight, &area, event);
-    */
-    tc_handle.currActiveTouchIdx++;
-  }
-}
 
 static void touch_cst836u_debug_info(void)
 {
@@ -332,14 +247,6 @@ void TouchReset()
   delay_ms(300);
 }
 
-
-static const TouchControllerDescriptor FT6236 =
-{
-    .read = ft6x06_TS_GetXY,
-    .detectTouch = ft6x06_TS_DetectTouch,
-    .printDebugInfo = touch_ft6236_debug_info,
-    .contactEvent = FT6206_TOUCH_EVT_FLAG_CONTACT
-};
 static const TouchControllerDescriptor CST836U =
 {
     .read = cst836u_TS_GetXY,
@@ -354,9 +261,6 @@ void detectTouchController()
   {
     touchController = TC_CST836U;
     tc = &CST836U;
-  } else {
-    touchController = TC_FT6236;
-    tc = &FT6236;
   }
 }
 
