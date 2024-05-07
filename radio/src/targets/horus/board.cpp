@@ -65,6 +65,51 @@ void boardInit()
 #endif
 
   pwrInit();
+
+#if defined(FUNCTION_SWITCHES)
+#if defined(RADIO_T15)
+#define LEDCHARGEON(x)   fsLedOff(x)
+#define LEDCHARGEOFF(x)  fsLedOn(x)
+#else
+#define LEDCHARGEON(x)   fsLedOn(x)
+#define LEDCHARGEOFF(x)  fsLedOff(x)
+#endif
+  // This is needed to prevent radio from starting when usb is plugged to charge
+  usbInit();
+  ledInit();
+  // prime debounce state...
+   usbPlugged();
+   if (usbPlugged()) {
+     delaysInit();
+     adcInit(&_adc_driver);
+     getADC();
+     pwrOn(); // required to get bat adc reads
+     INTERNAL_MODULE_OFF();
+     EXTERNAL_MODULE_OFF();
+     for (uint8_t i=0; i < NUM_FUNCTIONS_SWITCHES; i++)
+       LEDCHARGEOFF(i);
+     while (usbPlugged()) {
+       // Let it charge ...
+       getADC(); // Warning: the value read does not include VBAT calibration
+       if (getBatteryVoltage() >= 660)
+         LEDCHARGEON(0);
+       if (getBatteryVoltage() >= 700)
+         LEDCHARGEON(1);
+       if (getBatteryVoltage() >= 740)
+         LEDCHARGEON(2);
+       if (getBatteryVoltage() >= 780)
+         LEDCHARGEON(3);
+       if (getBatteryVoltage() >= 820)
+         LEDCHARGEON(4);
+       if (getBatteryVoltage() >= 842)
+         LEDCHARGEON(5);
+       delay_ms(1000);
+     }
+     while(1) // Wait power to drain
+       pwrOff();
+   }
+#endif
+
   boardInitModulePorts();
 
 #if defined(INTMODULE_HEARTBEAT) &&                                     \
@@ -89,44 +134,6 @@ void boardInit()
   TRACE("RCC->CSR = %08x", RCC->CSR);
 
   audioInit();
-
-#if defined(MANUFACTURER_JUMPER) && defined(FUNCTION_SWITCHES)
-  // This is needed to prevent radio from starting when usb is plugged to charge
-  usbInit();
-  // prime debounce state...
-  usbPlugged();
-
-  if (usbPlugged()) {
-    delaysInit();
-    adcInit(&_adc_driver);
-    getADC();
-    pwrOn();  // required to get bat adc reads
-    INTERNAL_MODULE_OFF();
-    EXTERNAL_MODULE_OFF();
-
-    while (usbPlugged()) {
-      //    // Let it charge ...
-      getADC();  // Warning: the value read does not include VBAT calibration
-      delay_ms(20);
-#if defined(FUNCTION_SWITCHES)
-      // Support for FS Led to indicate battery charge level
-      if (getBatteryVoltage() >= 660) fsLedOn(0);
-      if (getBatteryVoltage() >= 700) fsLedOn(1);
-      if (getBatteryVoltage() >= 740) fsLedOn(2);
-      if (getBatteryVoltage() >= 780) fsLedOn(3);
-      if (getBatteryVoltage() >= 820) fsLedOn(4);
-      if (getBatteryVoltage() >= 842) fsLedOn(5);
-#elif defined(STATUS_LEDS)
-      // Use Status LED to indicate battery charge level instead
-      if (getBatteryVoltage() <= 660) ledRed();         // low discharge
-      else if (getBatteryVoltage() <= 842) ledBlue();   // charging
-      else ledGreen();                                  // charging done
-      delay_ms(1000);
-#endif
-    }
-    pwrOff();
-  }
-#endif
 
   keysInit();
   switchInit();
