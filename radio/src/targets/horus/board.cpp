@@ -91,6 +91,7 @@ void boardInit()
      while (usbPlugged()) {
        // Let it charge ...
        getADC(); // Warning: the value read does not include VBAT calibration
+                 // Also, MCU is running which create a drop vs off
        if (getBatteryVoltage() >= 660)
          LEDCHARGEON(0);
        if (getBatteryVoltage() >= 700)
@@ -99,9 +100,9 @@ void boardInit()
          LEDCHARGEON(2);
        if (getBatteryVoltage() >= 780)
          LEDCHARGEON(3);
-       if (getBatteryVoltage() >= 820)
+       if (getBatteryVoltage() >= 810)
          LEDCHARGEON(4);
-       if (getBatteryVoltage() >= 842)
+       if (getBatteryVoltage() >= 820)
          LEDCHARGEON(5);
        delay_ms(1000);
      }

@@ -155,6 +155,10 @@ uint32_t isBootloaderStart(const uint8_t * buffer);
 #define NUM_TRIMS_KEYS                          (NUM_TRIMS * 2)
 
 // Battery driver
+#if defined(RADIO_T15)
+#define VOLTAGE_DROP 65
+#endif
+
 #if defined(PCBX10)
   // Lipo 2S
   #define BATTERY_WARN      66 // 6.6V
