@@ -21,7 +21,7 @@
 
 #pragma once
 
-#define HBP  ( 24 ) // TODO use names from FlySky
+#define HBP  ( 24 )
 #define VBP  ( 10 )
 
 #define HSW  ( 4 )
