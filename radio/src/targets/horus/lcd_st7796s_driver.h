@@ -19,8 +19,7 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __LCD_DRIVER_H__
-#define __LCD_DRIVER_H__
+#pragma once
 
 #define HBP  ( 24 ) // TODO use names from FlySky
 #define VBP  ( 10 )
@@ -31,18 +30,6 @@
 #define HFP  ( 140 - HBP )
 #define VFP  ( 22 - VBP )
 
-#define LCD_ST7796S_ID      ( 0x7796 )
-#define LCD_ILI9481_ID      ( 0x9481 )
-#define LCD_ILI9486_ID      ( 0x9486 )
-#define LCD_ILI9488_ID      ( 0x9488 )
-#define LCD_HX8357D_ID      ( 0x99 )
-
-typedef void (*lcdSpiInitFucPtr)(void);
-typedef unsigned int  LcdReadIDFucPtr( void );
-
-extern lcdSpiInitFucPtr lcdInitFunction;
-extern lcdSpiInitFucPtr lcdOffFunction;
-extern lcdSpiInitFucPtr lcdOnFunction;
 
 #define SET_IO_INPUT( PORT, PIN )            LL_GPIO_SetPinMode( PORT, PIN, LL_GPIO_MODE_INPUT )
 #define SET_IO_OUTPUT( PORT, PIN )           LL_GPIO_SetPinMode( PORT, PIN, LL_GPIO_MODE_OUTPUT )
@@ -65,25 +52,12 @@ extern lcdSpiInitFucPtr lcdOnFunction;
 #define LCD_READ_DATA_PIN()           LL_GPIO_IsInputPinSet(LCD_SPI_GPIO, LCD_SPI_MOSI_GPIO_PIN)
 
 
-#if 1
-#define HORIZONTAL_SYNC_WIDTH 			       ( 4 )
-#define HORIZONTAL_BACK_PORCH		               ( 24 )
-#define HORIZONTAL_FRONT_PORCH                         ( 140 - HORIZONTAL_BACK_PORCH )
-#define VERTICAL_SYNC_HEIGHT   		               ( 2 )
-#define VERTICAL_BACK_PORCH  		               ( 10 )
-#define VERTICAL_FRONT_PORCH    	               ( 22 - VERTICAL_BACK_PORCH )
-#else
-#define HORIZONTAL_SYNC_WIDTH 			       ( 4 )
-#define HORIZONTAL_BACK_PORCH		               ( 20 )
-#define HORIZONTAL_FRONT_PORCH                         ( 60 - HORIZONTAL_BACK_PORCH )
-#define VERTICAL_SYNC_HEIGHT   		               ( 2 )
-#define VERTICAL_BACK_PORCH  		               ( 6 )
-#define VERTICAL_FRONT_PORCH    	               ( 14 - VERTICAL_BACK_PORCH )
-#endif
-
-
-
-#endif
+#define HORIZONTAL_SYNC_WIDTH 			  ( 4 )
+#define HORIZONTAL_BACK_PORCH		      ( 24 )
+#define HORIZONTAL_FRONT_PORCH        ( 140 - HORIZONTAL_BACK_PORCH )
+#define VERTICAL_SYNC_HEIGHT   		    ( 2 )
+#define VERTICAL_BACK_PORCH  		      ( 10 )
+#define VERTICAL_FRONT_PORCH    	    ( 22 - VERTICAL_BACK_PORCH )
 
 
 

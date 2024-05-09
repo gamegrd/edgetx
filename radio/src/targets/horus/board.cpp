@@ -66,7 +66,7 @@ void boardInit()
 
   pwrInit();
 
-#if defined(FUNCTION_SWITCHES)
+#if defined(FUNCTION_SWITCHES) && !defined(DEBUG_SEGGER_RTT)
 #if defined(RADIO_T15)
 #define LEDCHARGEON(x)   fsLedOff(x)
 #define LEDCHARGEOFF(x)  fsLedOn(x)

@@ -52,26 +52,7 @@ static void startLcdRefresh(lv_disp_drv_t *disp_drv, uint16_t *buffer,
   while(_frame_addr_reloaded == 0);
 }
 
-lcdSpiInitFucPtr lcdInitFunction;
-lcdSpiInitFucPtr lcdOffFunction;
-lcdSpiInitFucPtr lcdOnFunction;
 uint32_t lcdPixelClock;
-
-enum ENUM_IO_SPEED
-{
-    IO_SPEED_LOW,
-    IO_SPEED_MID,
-    IO_SPEED_QUICK,
-    IO_SPEED_HIGH
-};
-
-enum ENUM_IO_MODE
-{
-    IO_MODE_INPUT,
-    IO_MODE_OUTPUT,
-    IO_MODE_ALTERNATE,
-    IO_MODE_ANALOG
-};
 
 static void LCD_AF_GPIOConfig(void) {
   /*
@@ -117,7 +98,7 @@ static void lcdSpiConfig(void) {
   LL_GPIO_StructInit(&GPIO_InitStructure);
 
   GPIO_InitStructure.Pin        = LCD_SPI_SCK_GPIO_PIN | LCD_SPI_MOSI_GPIO_PIN;
-  GPIO_InitStructure.Speed      = LL_GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStructure.Speed      = LL_GPIO_SPEED_FREQ_HIGH;
   GPIO_InitStructure.Mode       = LL_GPIO_MODE_OUTPUT;
   GPIO_InitStructure.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
   GPIO_InitStructure.Pull       = LL_GPIO_PULL_NO;
@@ -432,8 +413,6 @@ void lcdSetInitalFrameBuffer(void* fbAddress)
   initialFrameBuffer = fbAddress;
 }
 
-const char* boardLcdType = "";
-
 extern "C"
 void lcdInit(void)
 {
@@ -447,13 +426,9 @@ void lcdInit(void)
   LCD_AF_GPIOConfig();
 
   /* Send LCD initialization commands */
-  boardLcdType = "ST7796S (Default)";
-  lcdInitFunction = LCD_ST7796S_Init;
-  lcdOffFunction = LCD_ST7796S_Off;
-  lcdOnFunction = LCD_ST7796S_On;
   lcdPixelClock = 12000000;
 
-  lcdInitFunction();
+  LCD_ST7796S_Init();
 
   LCD_Init_LTDC();
   LCD_LayerInit();

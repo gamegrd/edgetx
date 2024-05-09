@@ -80,6 +80,7 @@ int usbPlugged()
     lastState = state;
   
   return debouncedState;
+#endif
 }
 #endif
 
