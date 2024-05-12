@@ -217,7 +217,7 @@ extern "C" void touchDriverRead(lv_indev_drv_t *drv, lv_indev_data_t *data)
     data->state = LV_INDEV_STATE_PRESSED;
     copy_ts_to_indev_data(st, data);
   } else {
-    TRACE("INDEV_STATE_RELEASED");
+    // TRACE("INDEV_STATE_RELEASED");
     data->state = LV_INDEV_STATE_RELEASED;
     copy_ts_to_indev_data(st, data);
   }
