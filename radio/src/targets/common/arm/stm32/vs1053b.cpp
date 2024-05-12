@@ -319,6 +319,7 @@ static inline void setMutePin(bool enabled)
 #if defined(INVERTED_MUTE_PIN)
   enabled = !enabled;
 #endif
+
   gpio_write(AUDIO_MUTE_GPIO, enabled);
 }
 

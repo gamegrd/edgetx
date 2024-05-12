@@ -95,11 +95,11 @@ void usbInit()
 {
   gpio_init_af(USB_GPIO_DM, USB_GPIO_AF, GPIO_PIN_SPEED_VERY_HIGH);
   gpio_init_af(USB_GPIO_DP, USB_GPIO_AF, GPIO_PIN_SPEED_VERY_HIGH);
-  
+
 #if defined(USB_GPIO_VBUS)
   gpio_init(USB_GPIO_VBUS, GPIO_IN, GPIO_PIN_SPEED_LOW);
 #endif
-  
+
   LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
   LL_AHB2_GRP1_EnableClock(LL_AHB2_GRP1_PERIPH_OTGFS);
 
