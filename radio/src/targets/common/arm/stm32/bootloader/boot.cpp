@@ -61,6 +61,7 @@
   #define SECONDARY_BOOTLOADER_KEYS       0x1200
 #endif
 
+// TODO: pass this via compile options
 #ifdef FIRMWARE_QSPI
 #define APP_START_ADDRESS               (uint32_t)(FIRMWARE_ADDRESS)
 #else
@@ -78,7 +79,6 @@
   #define SEL_CLEAR_FLASH_STORAGE_MENU_LEN 2
 #endif
 
-extern "C" void SystemClock_Config();
 typedef void (*voidFunction)(void);
 
 #if defined(FIRMWARE_QSPI)
@@ -204,6 +204,7 @@ int menuFlashFile(uint32_t index, event_t event)
 
 void flashWriteBlock()
 {
+  // TODO: use some board provided driver instead
   uint32_t blockOffset = 0;
 #if !defined(SIMU)
 #ifdef FIRMWARE_QSPI
@@ -245,23 +246,14 @@ void writeEepromBlock()
 #endif
 
 #if !defined(SIMU)
+
+// Optional board hook
+__weak void boardBLInit() {}
+__weak bool boardBLStartCondition() { return false; }
+
 void bootloaderInitApp()
 {
-  // TODO: really needed?
-  __HAL_RCC_DMA2D_CLK_ENABLE();
-  __HAL_RCC_LTDC_CLK_ENABLE();
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
-
-  // LL_AHB1_GRP1_EnableClock(LCD_RCC_AHB1Periph);
-#if defined(LCD_RCC_APB2Periph)
-  // LL_APB2_GRP1_EnableClock(LCD_RCC_APB2Periph);
-#endif
-  // LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
-
-
-#if defined(HAVE_BOARD_BOOTLOADER_INIT)
-  boardBootloaderInit();
-#endif
+  boardBLInit();
 
 #if defined(DEBUG_SEGGER_RTT)
   SEGGER_RTT_ConfigUpBuffer(0, NULL, NULL, 0, SEGGER_RTT_MODE_NO_BLOCK_SKIP);
@@ -277,22 +269,12 @@ void bootloaderInitApp()
     }
   }
 
-#if (defined(RADIO_T8) || defined(RADIO_COMMANDO8)) && !defined(RADIOMASTER_RELEASE)
-  // Bind button not pressed
-  if ((~(KEYS_GPIO_REG_BIND->IDR) & KEYS_GPIO_PIN_BIND) == false) {
-#else
-  // LHR & RHL trims not pressed simultanously
-#if defined(SECONDARY_BOOTLOADER_KEYS)
-  if (readTrims() != BOOTLOADER_KEYS && readTrims() != SECONDARY_BOOTLOADER_KEYS) {
-#else
-
-  if (readTrims() != BOOTLOADER_KEYS) {
-#endif
-#endif
+  if (!boardBLStartCondition()) {
     // TODO: deInit before restarting
     // Start main application
     __disable_irq();
 #if defined(FIRMWARE_QSPI)
+    // TODO: Move this into boardBLInit()
     void qspiInit();
     qspiInit();
     qspiEnableMemoryMappedMode();
@@ -300,31 +282,27 @@ void bootloaderInitApp()
     jumpTo(APP_START_ADDRESS);
   }
 
-// pwrOn();
+  // TODO: move all this into board specifics
+  pwrOn();
 
-// #if defined(ROTARY_ENCODER_NAVIGATION) && !defined(USE_HATS_AS_KEYS)
-//   rotaryEncoderInit();
-// #endif
+#if defined(ROTARY_ENCODER_NAVIGATION) && !defined(USE_HATS_AS_KEYS)
+  rotaryEncoderInit();
+#endif
 
-  // TODO: move this to board init
-  SystemClock_Config();
-  
   delaysInit(); // needed for lcdInit()
 
 #if defined(DEBUG)
   initSerialPorts();
 #endif
 
-#if defined(SDRAM)
-  SDRAM_Init();
-#endif
-  
   __enable_irq();
 
   TRACE("\nBootloader started :)");
 
+  // TODO: move BT & EEPROM into board specifics
 #if defined(BLUETOOTH)
-  // we shutdown the bluetooth module now to be sure it will be detected on firmware start
+  // we shutdown the bluetooth module now to be sure it will be detected on
+  // firmware start
   bluetoothInit(BLUETOOTH_DEFAULT_BAUDRATE, false);
 #endif
 
@@ -337,8 +315,6 @@ void bootloaderInitApp()
   // SD card detect pin
   sdInit();
   usbInit();
-  void qspiInit();
-  qspiInit();
 }
 
 int main()

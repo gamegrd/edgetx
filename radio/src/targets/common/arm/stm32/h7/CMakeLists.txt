@@ -7,11 +7,6 @@ if(NOT NATIVE_BUILD)
   set(STM32CUBE_DIR ${THIRDPARTY_DIR}/STM32H7xx_HAL_Driver)
   include_directories(${STM32CUBE_DIR}/Inc)
   
-  set(STM32_COLORLCD_DRIVERS
-    ${STM32CUBE_DIR}/Src/stm32h7xx_ll_dma2d.c
-    ${STM32CUBE_DIR}/Src/stm32h7xx_hal_ltdc.c
-  )
-
   add_library(stm32cube_ll OBJECT EXCLUDE_FROM_ALL
     # LL drivers
     ${STM32CUBE_DIR}/Src/stm32h7xx_ll_gpio.c
@@ -25,6 +20,7 @@ if(NOT NATIVE_BUILD)
     ${STM32CUBE_DIR}/Src/stm32h7xx_ll_adc.c
     ${STM32CUBE_DIR}/Src/stm32h7xx_ll_spi.c
     ${STM32CUBE_DIR}/Src/stm32h7xx_ll_usb.c
+    ${STM32CUBE_DIR}/Src/stm32h7xx_ll_dma2d.c
     # HAL drivers
     ${STM32CUBE_DIR}/Src/stm32h7xx_hal.c
     ${STM32CUBE_DIR}/Src/stm32h7xx_hal_pwr.c
@@ -45,21 +41,17 @@ if(NOT NATIVE_BUILD)
     ${STM32CUBE_DIR}/Src/stm32h7xx_hal_cortex.c
     ${STM32CUBE_DIR}/Src/stm32h7xx_hal_sdram.c
     ${STM32CUBE_DIR}/Src/stm32h7xx_hal_gpio.c
-    
-    ${STM32_COLORLCD_DRIVERS}
-    
-    )
+    ${STM32CUBE_DIR}/Src/stm32h7xx_hal_dsi.c
+    ${STM32CUBE_DIR}/Src/stm32h7xx_hal_ltdc.c
+  )
 
-  target_compile_options(stm32cube_ll PRIVATE -DUSE_FULL_LL_DRIVER)
+  target_compile_definitions(stm32cube_ll PRIVATE USE_FULL_LL_DRIVER)
   target_include_directories(stm32cube_ll PRIVATE
     ${THIRDPARTY_DIR}/CMSIS/Device/ST/STM32H7xx/Include
     ${THIRDPARTY_DIR}/CMSIS/Include)
 
   set(FIRMWARE_SRC ${FIRMWARE_SRC} $<TARGET_OBJECTS:stm32cube_ll>)
   set(BOOTLOADER_SRC ${BOOTLOADER_SRC} $<TARGET_OBJECTS:stm32cube_ll>)
-
-  # set(BOOTLOADER_SRC ${BOOTLOADER_SRC} ../../../../../targets/common/arm/stm32/h7/system_stm32h7xx.c)
-  # set(FIRMWARE_SRC ${FIRMWARE_SRC}     targets/common/arm/stm32/h7/system_stm32h7xx.c)
 endif()
 
 # StdPeriph library
@@ -87,7 +79,7 @@ endif()
 
 add_library(stm32_stdperiph OBJECT EXCLUDE_FROM_ALL
   ${STM32_STDPERIPH_SRC}
-  )
+)
 
 set(FIRMWARE_SRC ${FIRMWARE_SRC} $<TARGET_OBJECTS:stm32_stdperiph>)
 set(BOOTLOADER_SRC ${BOOTLOADER_SRC} $<TARGET_OBJECTS:stm32_stdperiph>)
