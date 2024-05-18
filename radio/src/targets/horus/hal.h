@@ -555,13 +555,9 @@
 #if defined(PCBX12S)
   #define LED_GPIO                      GPIO_PIN(GPIOI, 5) // PI.05
 #elif defined(RADIO_T15)
-  #define LED_RCC_AHB1Periph            RCC_AHB1Periph_GPIOI
-  #define LED_RED_GPIO                  GPIOI
-  #define LED_RED_GPIO_PIN              GPIO_Pin_14 //PI.14
-  #define LED_GREEN_GPIO                GPIOC
-  #define LED_GREEN_GPIO_PIN            GPIO_Pin_13 //PC.13
-  #define LED_BLUE_GPIO                 GPIOE
-  #define LED_BLUE_GPIO_PIN             GPIO_Pin_3  //PE.03
+  #define LED_RED_GPIO                  GPIO_PIN(GPIOI, 14)  //PI.14
+  #define LED_GREEN_GPIO                GPIO_PIN(GPIOC, 13)  //PC.13
+  #define LED_BLUE_GPIO                 GPIO_PIN(GPIOE, 3)   //PE.03
 #elif defined(PCBX10)
   #define LED_RCC_AHB1Periph            RCC_AHB1Periph_GPIOE
   #define LED_RED_GPIO                  GPIOE
@@ -575,21 +571,12 @@
 
 // Customisable switches leds
 #if defined(RADIO_T15)
-#define FS_RCC_AHB1Periph            (RCC_AHB1Periph_GPIOA | RCC_AHB1Periph_GPIOD | RCC_AHB1Periph_GPIOJ | RCC_AHB1Periph_GPIOH)
-#define GPIO_FSLED_GPIO_ON            GPIO_SetBits
-#define GPIO_FSLED_GPIO_OFF           GPIO_ResetBits
-#define FSLED_GPIO_1                  GPIOA
-#define FSLED_GPIO_PIN_1              GPIO_Pin_15 //PA.15
-#define FSLED_GPIO_2                  GPIOC
-#define FSLED_GPIO_PIN_2              GPIO_Pin_5  //PC.05
-#define FSLED_GPIO_3                  GPIOH
-#define FSLED_GPIO_PIN_3              GPIO_Pin_13 //PH.13
-#define FSLED_GPIO_4                  GPIOG
-#define FSLED_GPIO_PIN_4              GPIO_Pin_11 //PG.11
-#define FSLED_GPIO_5                  GPIOC
-#define FSLED_GPIO_PIN_5              GPIO_Pin_3  //PC.03
-#define FSLED_GPIO_6                  GPIOC
-#define FSLED_GPIO_PIN_6              GPIO_Pin_1  //PC.01
+#define FSLED_GPIO_1                  GPIO_PIN(GPIOA, 15)  //PA.15
+#define FSLED_GPIO_2                  GPIO_PIN(GPIOC, 5)   //PC.05
+#define FSLED_GPIO_3                  GPIO_PIN(GPIOH, 13)  //PH.13
+#define FSLED_GPIO_4                  GPIO_PIN(GPIOG, 11)  //PG.11
+#define FSLED_GPIO_5                  GPIO_PIN(GPIOC, 3)   //PC.03
+#define FSLED_GPIO_6                  GPIO_PIN(GPIOC, 1)   //PC.01
 #endif
 // Serial Port (DEBUG)
 #if defined(AUX_SERIAL)
@@ -682,9 +669,9 @@
 // LCD
 #if defined(RADIO_T15)
   // Uses ILI9488 driver
-  #define LCD_RCC_AHB1Periph              (RCC_AHB1Periph_GPIOE | RCC_AHB1Periph_GPIOG | RCC_AHB1Periph_GPIOI | RCC_AHB1Periph_GPIOJ | RCC_AHB1Periph_GPIOK | RCC_AHB1Periph_DMA2D)
+  #define LCD_RCC_AHB1Periph              (LL_AHB1_GRP1_PERIPH_GPIOE | LL_AHB1_GRP1_PERIPH_GPIOG | LL_AHB1_GRP1_PERIPH_GPIOI | LL_AHB1_GRP1_PERIPH_GPIOJ | LL_AHB1_GRP1_PERIPH_GPIOK | LL_AHB1_GRP1_PERIPH_DMA2D)
   #define LCD_RCC_APB1Periph              0
-  #define LCD_RCC_APB2Periph              RCC_APB2Periph_LTDC
+  #define LCD_RCC_APB2Periph              LL_APB2_GRP1_PERIPH_LTDC
   #define LCD_NRST_GPIO                   GPIOG
   #define LCD_NRST_GPIO_PIN               LL_GPIO_PIN_10 // PG.10
   #define LCD_SPI_GPIO                    GPIOE
@@ -914,14 +901,9 @@
   #define HAPTIC_TIMER_MODE             TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2
   #define HAPTIC_TIMER_COMPARE_VALUE    HAPTIC_GPIO_TIMER->CCR1
 #elif defined(RADIO_T15)  // TIM2_CH1
-  #define HAPTIC_RCC_AHB1Periph         RCC_AHB1Periph_GPIOA
-  #define HAPTIC_RCC_APB1Periph         RCC_APB1ENR_TIM2EN
-  #define HAPTIC_RCC_APB2Periph         0
-  #define HAPTIC_GPIO                   GPIOA
-  #define HAPTIC_GPIO_PIN               GPIO_Pin_5   // PA.05
+  #define HAPTIC_GPIO                   GPIO_PIN(GPIOA, 5) // PA.05
   #define HAPTIC_GPIO_TIMER             TIM2
-  #define HAPTIC_GPIO_AF                GPIO_AF_TIM2
-  #define HAPTIC_GPIO_PinSource         GPIO_PinSource5
+  #define HAPTIC_GPIO_AF                GPIO_AF1
   #define HAPTIC_TIMER_OUTPUT_ENABLE    TIM_CCER_CC1E | TIM_CCER_CC1NE;
   #define HAPTIC_TIMER_MODE             TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1PE
   #define HAPTIC_TIMER_COMPARE_VALUE    HAPTIC_GPIO_TIMER->CCR1
