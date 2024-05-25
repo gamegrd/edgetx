@@ -116,8 +116,10 @@ add_dependencies(bootloader ${BITMAPS_TARGET})
 target_compile_definitions(bootloader PRIVATE BOOT)
 target_compile_definitions(board_bl PRIVATE BOOT)
 
-target_link_options(bootloader PRIVATE
-  -lm -nostartfiles -T${LINKER_DIR}/bootloader.ld
+target_link_options(bootloader BEFORE PRIVATE
+  -lm -nostartfiles
+  -L${LINKER_DIR}/${TARGET_LINKER_DIR}/bootloader
+  -T${LINKER_DIR}/bootloader.ld
   -Wl,-Map=bootloader.map,--cref,--no-warn-mismatch,--gc-sections
   --specs=nano.specs
 )

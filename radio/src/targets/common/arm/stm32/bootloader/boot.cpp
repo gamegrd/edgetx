@@ -21,6 +21,7 @@
 
 #if !defined(SIMU)
 #include "stm32_hal_ll.h"
+#include "stm32_hal.h"
 #include "stm32_timer.h"
 #include "stm32_i2c_driver.h"
 # if defined(FIRMWARE_QSPI)
@@ -77,31 +78,6 @@
 #if defined(SPI_FLASH)
   #include "diskio_spi_flash.h"
   #define SEL_CLEAR_FLASH_STORAGE_MENU_LEN 2
-#endif
-
-typedef void (*voidFunction)(void);
-
-#if defined(FIRMWARE_QSPI)
-__attribute__((section(".isrvec"))) void* isrvec[256];
-#define jumpTo(addr)                                                       \
-  do {                                                                     \
-    for (int i = 0; i < 256; ++i) isrvec[i] = (void*)((uint32_t*)addr)[i]; \
-    SCB_CleanDCache();                                                     \
-    SCB->VTOR = (intptr_t)&isrvec[0];                                      \
-    __set_MSP(*(__IO uint32_t*)addr);                                      \
-    uint32_t jumpAddress = *(uint32_t*)(addr + 4);                         \
-    voidFunction jumpFn = (voidFunction)jumpAddress;                       \
-    jumpFn();                                                              \
-  } while (0)
-#else
-#define jumpTo(addr)                                 \
-  do {                                               \
-    SCB->VTOR = addr;                                \
-    __set_MSP(*(__IO uint32_t*)addr);                \
-    uint32_t jumpAddress = *(uint32_t*)(addr + 4);   \
-    voidFunction jumpFn = (voidFunction)jumpAddress; \
-    jumpFn();                                        \
-  } while (0)
 #endif
 
 #if !defined(SIMU)
@@ -247,9 +223,21 @@ void writeEepromBlock()
 
 #if !defined(SIMU)
 
+typedef void (*fctptr_t)(void);
+
+static __attribute__((noreturn)) void jumpTo(uint32_t addr)
+{
+  __disable_irq();
+  __set_MSP(*(uint32_t*)addr);
+  fctptr_t reset_handler = (fctptr_t)*(uint32_t*)(addr + 4);
+  reset_handler();
+  while(1){}    
+}
+
 // Optional board hook
 __weak void boardBLInit() {}
 __weak bool boardBLStartCondition() { return false; }
+__weak void boardBLPreJump() {}
 
 void bootloaderInitApp()
 {
@@ -270,15 +258,8 @@ void bootloaderInitApp()
   }
 
   if (!boardBLStartCondition()) {
-    // TODO: deInit before restarting
     // Start main application
-    __disable_irq();
-#if defined(FIRMWARE_QSPI)
-    // TODO: Move this into boardBLInit()
-    void qspiInit();
-    qspiInit();
-    qspiEnableMemoryMappedMode();
-#endif
+    boardBLPreJump();
     jumpTo(APP_START_ADDRESS);
   }
 
