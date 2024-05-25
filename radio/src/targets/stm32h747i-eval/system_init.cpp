@@ -3,16 +3,19 @@
 #include "system_clock.h"
 #include "stm32h7xx_hal_cortex.h"
 
+#define NAKED __attribute__((naked))
+
+#if !defined(BOOT)
+#  define BOOTSTRAP __attribute__((section(".bootstrap")))
+#else
+#  define BOOTSTRAP
+#endif
+
 // Linker script symbols
-extern uint32_t _start_isr_vector;
-extern uint32_t _sidata;
-extern uint32_t _sdata;
-extern uint32_t _edata;
-extern uint32_t _sbss;
-extern uint32_t _ebss;
-extern uint32_t _estack;
+extern uint32_t _sisr_vector;
 extern uint32_t SDRAM_START;
 
+extern "C" void set_vtor();
 extern "C" void CPU_CACHE_Enable();
 extern "C" void MPU_Init();
 extern "C" void clean_dcache();
@@ -25,14 +28,14 @@ extern "C" void SDRAM_Init();
 extern "C" void __libc_init_array();
 extern "C" int main();
 
-extern "C" __attribute__((naked))
+extern "C" NAKED BOOTSTRAP
 void Reset_Handler()
 {
   asm inline (
     "ldr sp, =_estack \n"
   );
   
-#if defined(BOOT)
+#if defined(BOOT) || 0 // !defined(FIRMWARE_QSPI)
   // MCU Init
   asm inline (
     "bl SystemInit \n"
@@ -43,39 +46,44 @@ void Reset_Handler()
     "bl MPU_Init \n"
     "bl CPU_CACHE_Enable \n"
   );
-#else
+#endif
+
+#if !defined(BOOT)
+  // Copy / setup ISR vector
   asm inline (
-    "bl set_vtor \n"
+    "ldr r0, =_sisr_vector \n"
+    "ldr r1, =_eisr_vector \n"
+    "ldr r2, =_isr_load \n"
+    "bl naked_copy      \n"
+    "bl set_vtor        \n"
+  );
+
+  // Copy code into fast RAM
+  asm inline (
+    "ldr r0, =_siram    \n"
+    "ldr r1, =_eiram    \n"
+    "ldr r2, =_stext_iram \n"
+    "bl naked_copy      \n"
+  );
+
+  // Copy code into normal RAM
+  asm inline (
+    "ldr r0, =_stext    \n"
+    "ldr r1, =_etext    \n"
+    "ldr r2, =_text_load \n"
+    "bl naked_copy      \n"
   );
 #endif
 
   // Copy initialized data segment
-  // uint32_t* src = &_sidata;
-  // for (uint32_t* dst = &_sdata; dst < &_edata;) {
-  //   *(dst++) = *(src++);
-  // }
   asm inline (
     "ldr r0, =_sdata    \n"
     "ldr r1, =_edata    \n"
     "ldr r2, =_sidata   \n"
-    "movs r3, 0         \n"
-    "b LoopCopyDataInit \n"
-
-  "CopyDataInit:        \n"
-    "ldr r4, [r2, r3]   \n"
-    "str r4, [r0, r3]   \n"
-    "adds r3, r3, #4    \n"
-
-  "LoopCopyDataInit:    \n"
-    "adds r4, r0, r3    \n"
-    "cmp r4, r1         \n"
-    "bcc CopyDataInit   \n"
+    "bl naked_copy      \n"
   );
  
   // Zero fill bss segment
-  // for (uint32_t* dst = &_sbss; dst < &_ebss;) {
-  //   *(dst++) = 0;
-  // }
   asm inline (
     "ldr r2, =_sbss    \n"
     "ldr r4, =_ebss    \n"
@@ -95,14 +103,39 @@ void Reset_Handler()
     "bl clean_dcache \n"
     // Call static constructors
     "bl __libc_init_array \n"
+    "bl SystemCoreClockUpdate \n"
     // Call the application's entry point
     "bl main \n"
     "bx lr   \n"
   );
 }
 
-extern "C" void set_vtor() {
-  SCB->VTOR = (intptr_t)&_start_isr_vector;
+extern "C" BOOTSTRAP void set_vtor() {
+  SCB->VTOR = (intptr_t)&_sisr_vector;
+}
+
+extern "C" NAKED BOOTSTRAP void naked_copy() {
+  // r0: destination start
+  // r1: destination end
+  // r2: source start
+  asm inline (
+    "cmp r0, r2         \n"
+    "beq SkipCopy       \n"
+    "movs r3, 0         \n"
+    "b LoopCopyInit     \n"
+
+  "CopyInit:            \n"
+    "ldr r4, [r2, r3]   \n"
+    "str r4, [r0, r3]   \n"
+    "adds r3, r3, #4    \n"
+
+  "LoopCopyInit:        \n"
+    "adds r4, r0, r3    \n"
+    "cmp r4, r1         \n"
+    "bcc CopyInit       \n"
+  "SkipCopy:            \n"
+    "bx lr              \n"
+  );
 }
 
 extern "C" __attribute__((used))
@@ -168,7 +201,7 @@ void MPU_Init()
   MPU_InitStruct.SubRegionDisable = 0x0;
   MPU_InitStruct.TypeExtField = MPU_TEX_LEVEL1;
   MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
-  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_DISABLE;
+  MPU_InitStruct.DisableExec = MPU_INSTRUCTION_ACCESS_ENABLE;
   MPU_InitStruct.IsShareable = MPU_ACCESS_NOT_SHAREABLE;
   MPU_InitStruct.IsCacheable = MPU_ACCESS_CACHEABLE;
   MPU_InitStruct.IsBufferable = MPU_ACCESS_BUFFERABLE;

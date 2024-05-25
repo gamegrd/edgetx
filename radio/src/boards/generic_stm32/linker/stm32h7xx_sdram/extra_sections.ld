@@ -16,7 +16,18 @@
   . = ALIGN(4);
 } > DTCMRAM
 
-.sram2(NOLOAD) :
+.iram (NOLOAD) :
+{
+  . = ALIGN(4);
+  _siram = .;
+  *(.iram)
+  . = ALIGN(4);
+  _eiram = .;
+} > ITCMRAM AT> REGION_TEXT_STORAGE
+
+_stext_iram = LOADADDR(.iram);
+
+.sram2 (NOLOAD) :
 {
   . = ALIGN(4);
   *(.sram2)
