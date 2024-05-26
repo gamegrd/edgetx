@@ -39,22 +39,54 @@
 
 #include <string.h>
 
-/* Configure PC.08, PC.09, PC.10, PC.11 pins: D0, D1, D2, D3 pins */
-#if !defined(SD_SDIO_DATA_GPIO) && !defined(SD_SDIO_DATA_GPIO_PINS)
-#define SD_SDIO_DATA_GPIO GPIOC
-#define SD_SDIO_DATA_GPIO_PINS \
-  (LL_GPIO_PIN_8 | LL_GPIO_PIN_9 | LL_GPIO_PIN_10 | LL_GPIO_PIN_11)
+#if !defined(SD_SDIO_PIN_D0)
+#  define SD_SDIO_PIN_D0 GPIO_PIN(GPIOC, 8)
+#  if defined(STM32H7RS)
+#    define SD_SDIO_AF_D0  GPIO_AF11
+#  else
+#    define SD_SDIO_AF_D0  GPIO_AF12
+#  endif
 #endif
 
-/* Configure PD.02 CMD line */
-#if !defined(SD_SDIO_CMD_GPIO) && !defined(SD_SDIO_CMD_GPIO_PIN)
-#define SD_SDIO_CMD_GPIO GPIOD
-#define SD_SDIO_CMD_GPIO_PIN LL_GPIO_PIN_2
+#if !defined(SD_SDIO_PIN_D1)
+#  define SD_SDIO_PIN_D1 GPIO_PIN(GPIOC, 9)
+#  if defined(STM32H7RS)
+#    define SD_SDIO_AF_D1  GPIO_AF11
+#  else
+#    define SD_SDIO_AF_D1  GPIO_AF12
+#  endif
 #endif
 
-#if !defined(SD_SDIO_CLK_GPIO) && !defined(SD_SDIO_CLK_GPIO_PIN)
-#define SD_SDIO_CLK_GPIO GPIOC
-#define SD_SDIO_CLK_GPIO_PIN LL_GPIO_PIN_12
+#if !defined(SD_SDIO_PIN_D2)
+#  define SD_SDIO_PIN_D2 GPIO_PIN(GPIOC, 10)
+#  define SD_SDIO_AF_D2  GPIO_AF12
+#endif
+
+#if !defined(SD_SDIO_PIN_D3)
+#  define SD_SDIO_PIN_D3 GPIO_PIN(GPIOC, 11)
+#  if defined(STM32H7RS)
+#    define SD_SDIO_AF_D3  GPIO_AF11
+#  else
+#    define SD_SDIO_AF_D3  GPIO_AF12
+#  endif
+#endif
+
+#if !defined(SD_SDIO_PIN_CMD)
+#  define SD_SDIO_PIN_CMD GPIO_PIN(GPIOD, 2)
+#  if defined(STM32H7RS)
+#    define SD_SDIO_AF_CMD  GPIO_AF11
+#  else
+#    define SD_SDIO_AF_CMD  GPIO_AF12
+#  endif
+#endif
+
+#if !defined(SD_SDIO_PIN_CLK)
+#  define SD_SDIO_PIN_CLK GPIO_PIN(GPIOC, 12)
+#  if defined(STM32H7RS)
+#    define SD_SDIO_AF_CLK  GPIO_AF11
+#  else
+#    define SD_SDIO_AF_CLK  GPIO_AF12
+#  endif
 #endif
 
 
@@ -93,7 +125,7 @@
 #define BLOCK_SIZE FF_MAX_SS
 #define SD_TIMEOUT 3000 /* 300ms */
 
-#if defined(STM32H7) || defined(STM32F4)
+#if defined(STM32H7) || defined(STM32H7RS) || defined(STM32F4)
 extern uint32_t _sram;
 extern uint32_t _eram;
 #define _IS_DMA_BUFFER(addr) \
@@ -132,47 +164,17 @@ static void sdio_low_level_init(void)
 {
   _sd_sdio_clk_enable(SD_SDIO);
 
-  LL_GPIO_InitTypeDef  GPIO_InitStructure;
-  LL_GPIO_StructInit(&GPIO_InitStructure);
-
-  stm32_gpio_enable_clock(SD_SDIO_DATA_GPIO);
-  stm32_gpio_enable_clock(SD_SDIO_CMD_GPIO);
-  stm32_gpio_enable_clock(SD_SDIO_CLK_GPIO);
-
-#if defined(SD_SDIO_HAS_TRANSCEIVER)
-  stm32_gpio_enable_clock(SD_SDIO_CKIN_GPIO);
-  stm32_gpio_enable_clock(SD_SDIO_CDIR_GPIO);  
-  stm32_gpio_enable_clock(SD_SDIO_DDIR_GPIO);  
-#endif
-
-  GPIO_InitStructure.Pin = SD_SDIO_DATA_GPIO_PINS;
-  GPIO_InitStructure.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStructure.Mode = LL_GPIO_MODE_ALTERNATE;
-  GPIO_InitStructure.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-  GPIO_InitStructure.Pull = LL_GPIO_PULL_UP;
-  GPIO_InitStructure.Alternate = LL_GPIO_AF_12; // SDIO
-  LL_GPIO_Init(SD_SDIO_DATA_GPIO, &GPIO_InitStructure);
-
-  GPIO_InitStructure.Pin = SD_SDIO_CMD_GPIO_PIN;
-  LL_GPIO_Init(SD_SDIO_CMD_GPIO, &GPIO_InitStructure);
-
-  /* Configure PC.12 pin: CLK pin */
-  GPIO_InitStructure.Pin = SD_SDIO_CLK_GPIO_PIN;
-  GPIO_InitStructure.Pull = LL_GPIO_PULL_NO;
-  LL_GPIO_Init(SD_SDIO_CLK_GPIO, &GPIO_InitStructure);
+  gpio_init_af(SD_SDIO_PIN_D0, SD_SDIO_AF_D0, GPIO_PIN_SPEED_HIGH);
+  gpio_init_af(SD_SDIO_PIN_D1, SD_SDIO_AF_D1, GPIO_PIN_SPEED_HIGH);
+  gpio_init_af(SD_SDIO_PIN_D2, SD_SDIO_AF_D2, GPIO_PIN_SPEED_HIGH);
+  gpio_init_af(SD_SDIO_PIN_D3, SD_SDIO_AF_D3, GPIO_PIN_SPEED_HIGH);
+  gpio_init_af(SD_SDIO_PIN_CMD, SD_SDIO_AF_CMD, GPIO_PIN_SPEED_HIGH);
+  gpio_init_af(SD_SDIO_PIN_CLK, SD_SDIO_AF_CLK, GPIO_PIN_SPEED_HIGH);
 
 #if defined(SD_SDIO_HAS_TRANSCEIVER)
-  GPIO_InitStructure.Pin = SD_SDIO_CKIN_GPIO_PIN;
-  GPIO_InitStructure.Alternate = SD_SDIO_CKIN_GPIO_AF;
-  LL_GPIO_Init(SD_SDIO_CKIN_GPIO, &GPIO_InitStructure);
-
-  GPIO_InitStructure.Pin = SD_SDIO_CDIR_GPIO_PIN;
-  GPIO_InitStructure.Alternate = SD_SDIO_CDIR_GPIO_AF;
-  LL_GPIO_Init(SD_SDIO_CDIR_GPIO, &GPIO_InitStructure);
-
-  GPIO_InitStructure.Pin = SD_SDIO_DDIR_GPIO_PINS;
-  GPIO_InitStructure.Alternate = SD_SDIO_DDIR_GPIO_AF;
-  LL_GPIO_Init(SD_SDIO_DDIR_GPIO, &GPIO_InitStructure);
+  gpio_init_af(SD_SDIO_PIN_CKIN, SD_SDIO_AF_CKIN, GPIO_PIN_SPEED_HIGH);
+  gpio_init_af(SD_SDIO_PIN_CDIR, SD_SDIO_AF_CDIR, GPIO_PIN_SPEED_HIGH);
+  gpio_init_af(SD_SDIO_PIN_DDIR, SD_SDIO_AF_DDIR, GPIO_PIN_SPEED_HIGH);
 #endif
 
   // SDIO Interrupt ENABLE

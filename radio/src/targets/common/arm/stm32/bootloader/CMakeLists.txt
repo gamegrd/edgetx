@@ -150,7 +150,7 @@ target_include_directories(bootloader
 
 add_custom_command(
   TARGET bootloader POST_BUILD
-  COMMAND ${CMAKE_OBJCOPY} -O binary --only-section=.text --only-section=.data bootloader.elf ${CMAKE_BINARY_DIR}/bootloader.bin
+  COMMAND ${CMAKE_OBJCOPY} -O binary bootloader.elf ${CMAKE_BINARY_DIR}/bootloader.bin
 )
 
 if(PYTHONINTERP_FOUND)
