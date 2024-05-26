@@ -1,5 +1,5 @@
 /*
- * Copyright (C) EdgeTx
+ * Copyright (C) EdgeTX
  *
  * Based on code named
  *   opentx - https://github.com/opentx/opentx
@@ -19,17 +19,5 @@
  * GNU General Public License for more details.
  */
 
-#include "stm32_dma.h"
+extern "C" void SystemClock_Config();
 
-void stm32_dma_enable_clock(DMA_TypeDef* DMAx)
-{
-#if defined(DMA1) && defined(DMA2)
-  if (DMAx == DMA1) {
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
-  } else if (DMAx == DMA2) {
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA2);
-  }
-#endif
-
-  // TODO
-}

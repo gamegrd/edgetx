@@ -19,17 +19,16 @@
  * GNU General Public License for more details.
  */
 
-#include "stm32_dma.h"
+#include "board.h"
+extern void LCD_SetBrightness(uint32_t);
 
-void stm32_dma_enable_clock(DMA_TypeDef* DMAx)
-{
-#if defined(DMA1) && defined(DMA2)
-  if (DMAx == DMA1) {
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
-  } else if (DMAx == DMA2) {
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA2);
-  }
-#endif
+bool boardBacklightOn = false;
+bool isBacklightEnabled() { return boardBacklightOn; }
+void backlightFullOn() { boardBacklightOn = true; }
 
-  // TODO
+// void backlightInit() {}
+void backlightEnable(uint8_t dutyCycle) {
+ LCD_SetBrightness(dutyCycle);
 }
+
+void backlightDisable() {}

@@ -23,7 +23,8 @@
 #include "stm32_gpio.h"
 #include "stm32_dma.h"
 #include "hal/gpio.h"
-#include "stm32h7xx_ll_usart.h"
+
+#include "stm32_hal_ll.h"
 
 #include <string.h>
 
@@ -116,9 +117,12 @@ static void enable_usart_clock(USART_TypeDef* USARTx)
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART3);
   } else if (USARTx == UART4) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART4);
-  } else if (USARTx == USART6) {
+  }
+#if defined(USART6)
+  else if (USARTx == USART6) {
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_USART6);
   }
+#endif
 #if defined(UART7) // does not exist on F2
   else if (USARTx == UART7) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART7);
@@ -136,9 +140,12 @@ static void disable_usart_clock(USART_TypeDef* USARTx)
     LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_USART3);
   } else if (USARTx == UART4) {
     LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_UART4);
-  } else if (USARTx == USART6) {
+  }
+#if defined(USART6)
+  else if (USARTx == USART6) {
     LL_APB2_GRP1_DisableClock(LL_APB2_GRP1_PERIPH_USART6);
   }
+#endif
 #if defined(UART7) // does not exist on F2
   else if (USARTx == UART7) {
     LL_APB1_GRP1_DisableClock(LL_APB1_GRP1_PERIPH_UART7);
@@ -193,6 +200,10 @@ void stm32_usart_init_rx_dma(const stm32_usart_t* usart, const void* buffer, uin
   LL_DMA_InitTypeDef dmaInit;
   LL_DMA_StructInit(&dmaInit);
 
+#if defined(STM32H7RS)
+  // TODO
+#else // STM32H7RS
+
 #if !defined(STM32H7)
   dmaInit.Channel = usart->rxDMA_Channel;
 #endif
@@ -212,10 +223,16 @@ void stm32_usart_init_rx_dma(const stm32_usart_t* usart, const void* buffer, uin
   uint32_t req_channel = usart->rxDMA_Channel;
 
   LL_DMAMUX_SetRequestID(dmamux, mux_channel, req_channel);
-#endif
+#endif // STM32H7
+
+#endif // !STM32H7RS
 
   // Stream can be enable as the USART has alread been enabled
+#if defined(STM32H7RS)
+  LL_DMA_EnableChannel(usart->rxDMA, usart->rxDMA_Stream);
+#else
   LL_DMA_EnableStream(usart->rxDMA, usart->rxDMA_Stream);
+#endif
 }
 
 void stm32_usart_deinit_rx_dma(const stm32_usart_t* usart)
@@ -379,6 +396,7 @@ void stm32_usart_send_buffer(const stm32_usart_t* usart, const uint8_t * data, u
     LL_DMA_InitTypeDef dmaInit;
     LL_DMA_StructInit(&dmaInit);
 
+#if !defined(STM32H7RS)
 //    dmaInit.Channel = usart->txDMA_Channel;
     dmaInit.PeriphOrM2MSrcAddress = (uint32_t)&usart->USARTx->RDR;
     dmaInit.Direction = LL_DMA_DIRECTION_MEMORY_TO_PERIPH;
@@ -393,6 +411,7 @@ void stm32_usart_send_buffer(const stm32_usart_t* usart, const uint8_t * data, u
       LL_DMA_EnableIT_TC(usart->txDMA, usart->txDMA_Stream);
     }
     LL_DMA_EnableStream(usart->txDMA, usart->txDMA_Stream);
+#endif
 
     return;
   } else {
@@ -406,10 +425,12 @@ void stm32_usart_send_buffer(const stm32_usart_t* usart, const uint8_t * data, u
 uint8_t stm32_usart_tx_completed(const stm32_usart_t* usart)
 {
   if (LL_USART_IsEnabledDMAReq_TX(usart->USARTx)) {
+#if !defined(STM32H7RS)
     // TX DMA is configured, let's check if the stream is currently enabled
     if (LL_DMA_IsEnabledStream(usart->txDMA, usart->txDMA_Stream) ||
         !LL_USART_IsActiveFlag_TXE(usart->USARTx))
       return 0;
+#endif
   } else if (LL_USART_IsEnabledIT_TXE(usart->USARTx)) {
     return 0;
   }
@@ -421,6 +442,7 @@ void stm32_usart_wait_for_tx_dma(const stm32_usart_t* usart)
 {
   // TODO: check if everything is properly initialised, this seems to block when
   //       the port has been initialised with a zero baudrate
+#if !defined(STM32H7RS)
   if (LL_DMA_IsEnabledStream(usart->txDMA, usart->txDMA_Stream)) {
 
     switch(usart->txDMA_Stream) {
@@ -446,6 +468,7 @@ void stm32_usart_wait_for_tx_dma(const stm32_usart_t* usart)
       break;
     }
   }
+#endif
 }
 
 void stm32_usart_enable_rx(const stm32_usart_t* usart)

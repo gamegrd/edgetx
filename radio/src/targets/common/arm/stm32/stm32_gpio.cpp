@@ -25,7 +25,6 @@
 #include "stm32_gpio_driver.h"
 #include "stm32_hal.h"
 #include "stm32_hal_ll.h"
-#include "stm32h7xx_ll_bus.h"
 
 static inline GPIO_TypeDef* _port(gpio_t pin)
 {
@@ -104,6 +103,9 @@ void gpio_init_int(gpio_t pin, gpio_mode_t mode, gpio_flank_t flank, gpio_cb_t c
   LL_APB4_GRP1_EnableClock(LL_APB4_GRP1_PERIPH_SYSCFG);
 #elif defined(LL_APB2_GRP1_PERIPH_SYSCFG)
   LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+#elif defined(LL_APB4_GRP1_PERIPH_SBS)
+# define SYSCFG SBS
+  LL_APB4_GRP1_EnableClock(LL_APB4_GRP1_PERIPH_SBS);
 #else
   #error "Unsupported SYSCFG clock"
 #endif

@@ -93,9 +93,7 @@ if(NOT NATIVE_BUILD)
     ${STM32_DRIVER_DIR}/stm32_dma.cpp
     ${STM32_DRIVER_DIR}/stm32_gpio.cpp
     ${STM32_DRIVER_DIR}/stm32_spi.cpp
-    # ${STM32_DRIVER_DIR}/stm32_adc.cpp
     ${STM32_DRIVER_DIR}/stm32_adc.cpp
-    ${STM32_DRIVER_DIR}/stm32_qspi.cpp
   )
 
   # HAL/LL drivers using TRACE

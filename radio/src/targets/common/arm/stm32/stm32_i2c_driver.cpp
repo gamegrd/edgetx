@@ -115,7 +115,8 @@ int stm32_i2c_init(uint8_t bus, uint32_t clock_rate)
   if (!h) return -1;
 
   I2C_InitTypeDef& init = h->Init;
-#ifdef STM32H7
+#if defined(STM32H7) || defined(STM32H7RS)
+  // TODO
   init.Timing = 0x10B0354F;
 #else
   if (init.ClockSpeed > 0) {
@@ -251,16 +252,29 @@ static int i2c_enable_gpio_clock(GPIO_TypeDef *GPIOx)
 static int i2c_enable_clock(I2C_TypeDef* instance)
 {
   /* Peripheral clock enable */
-  if (instance == I2C1)
+  if (instance == I2C1) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
-  else if (instance == I2C2)
+#if defined(LL_RCC_I2C1_CLKSOURCE)
+    LL_RCC_SetClockSource(LL_RCC_I2C1_CLKSOURCE_PCLK1);
+#endif
+  } else if (instance == I2C2) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C2);
-  else if (instance == I2C3)
+#if defined(LL_RCC_I2C23_CLKSOURCE)
+    LL_RCC_SetClockSource(LL_RCC_I2C23_CLKSOURCE_PCLK1);
+#endif
+  } else if (instance == I2C3) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C3);
-  else
+#if defined(LL_RCC_I2C23_CLKSOURCE)
+    LL_RCC_SetClockSource(LL_RCC_I2C23_CLKSOURCE_PCLK1);
+#endif
+  } else {
     return -1;
+  }
 
+#if defined(LL_RCC_I2C123_CLKSOURCE)
   LL_RCC_SetClockSource(LL_RCC_I2C123_CLKSOURCE_PCLK1);
+#endif
+
   return 0;
 }
 

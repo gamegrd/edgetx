@@ -102,8 +102,9 @@ void usbInit()
 #endif
 
   // TODO: check if this is necessary
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
-  __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
+  // __HAL_RCC_SYSCFG_CLK_ENABLE();
+  // __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
+
   NVIC_SetPriority(OTG_FS_IRQn, 11);
   NVIC_EnableIRQ(OTG_FS_IRQn);
 

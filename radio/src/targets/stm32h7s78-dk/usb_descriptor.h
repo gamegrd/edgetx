@@ -1,5 +1,5 @@
 /*
- * Copyright (C) EdgeTx
+ * Copyright (C) EdgeTX
  *
  * Based on code named
  *   opentx - https://github.com/opentx/opentx
@@ -19,17 +19,11 @@
  * GNU General Public License for more details.
  */
 
-#include "stm32_dma.h"
+#ifndef _USB_DESCRIPTOR_H_
+#define _USB_DESCRIPTOR_H_
 
-void stm32_dma_enable_clock(DMA_TypeDef* DMAx)
-{
-#if defined(DMA1) && defined(DMA2)
-  if (DMAx == DMA1) {
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
-  } else if (DMAx == DMA2) {
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA2);
-  }
-#endif
+#define USB_NAME                     "H7-test"
+#define USB_MANUFACTURER             'H', '7', '-', 't', 'e', 's', 't', ' '  /* 8 bytes */
+#define USB_PRODUCT                  'H', '7', '-', 't', 'e', 's', 't', ' '  /* 8 Bytes */
 
-  // TODO
-}
+#endif // _USB_DESCRIPTOR_H_

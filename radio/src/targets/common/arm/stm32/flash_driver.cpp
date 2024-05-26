@@ -26,22 +26,25 @@
 #include "hal/watchdog_driver.h"
 
 
-#ifdef STM32H7
+#if defined(STM32H7)
   #define FLASH_CR FLASH->CR1
 #else
   #define FLASH_CR FLASH->CR
 #endif
 
-#ifndef FLASH_CR_START
-  #define FLASH_CR_START FLASH_CR_STRT
+#if !defined(FLASH_CR_START)
+#  define FLASH_CR_START FLASH_CR_STRT
 #endif
 
+#if !defined(FLASH_SR_BUSY)
+#  define FLASH_SR_BUSY FLASH_SR_BSY
+#endif
 
 void waitFlashIdle()
 {
   do {
     WDG_RESET();
-  } while (__HAL_FLASH_GET_FLAG(FLASH_FLAG_BSY));
+  } while (FLASH->SR & FLASH_SR_BUSY);
 }
 
 //After reset, write is not allowed in the Flash control register (FLASH_CR) to protect the
@@ -55,12 +58,12 @@ void waitFlashIdle()
 //FLASH_CR register.
 void unlockFlash()
 {
-#ifdef STM32H7
+#if defined(STM32H7)
   FLASH->KEYR1 = FLASH_KEY1;
   FLASH->KEYR1 = FLASH_KEY2;
 #else
-  FLASH->KEYR = 0x45670123;
-  FLASH->KEYR = 0xCDEF89AB;
+  FLASH->KEYR = FLASH_KEY1;
+  FLASH->KEYR = FLASH_KEY2;
 #endif
 }
 
@@ -70,7 +73,7 @@ void lockFlash()
   FLASH_CR |= FLASH_CR_LOCK;
 }
 
-#define SECTOR_MASK               ((uint32_t)0xFFFFFF07)
+#define SECTOR_MASK ((uint32_t)0xFFFFFF07)
 
 void eraseSector(uint32_t sector)
 {
@@ -78,8 +81,10 @@ void eraseSector(uint32_t sector)
 
   waitFlashIdle();
 
+#if defined(FLASH_CR_PSIZE)
   FLASH_CR &= ~FLASH_CR_PSIZE;
   FLASH_CR |= FLASH_CR_PSIZE_0;
+#endif
   FLASH_CR &= SECTOR_MASK;
   FLASH_CR |= FLASH_CR_SER | (sector << 3);
   FLASH_CR |= FLASH_CR_START;
@@ -158,8 +163,10 @@ void flashWrite(uint32_t * address, const uint32_t * buffer) // page size is 256
     // Wait for last operation to be completed
     waitFlashIdle();
 
+#if defined(FLASH_CR_PSIZE)
     FLASH_CR &= ~FLASH_CR_PSIZE;
     FLASH_CR |= FLASH_CR_PSIZE_0;
+#endif
     FLASH_CR |= FLASH_CR_PG;
 
     *address = *buffer;
