@@ -403,6 +403,30 @@ static uint32_t I2C_Compute_SCLL_SCLH (uint32_t clock_src_freq, uint32_t I2C_spe
   return ret;
 }
 
+
+static int i2c_init_clock_source(I2C_TypeDef* instance)
+{
+#if defined(LL_RCC_I2C1_CLKSOURCE)
+  if (instance == I2C1) {
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
+    LL_RCC_SetClockSource(LL_RCC_I2C1_CLKSOURCE_PCLK1);
+  }
+#endif
+
+#if defined(LL_RCC_I2C23_CLKSOURCE)
+  if (instance == I2C2) {
+    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C2);
+    LL_RCC_SetClockSource(LL_RCC_I2C23_CLKSOURCE_PCLK1);
+  }
+#endif
+
+#if defined(LL_RCC_I2C123_CLKSOURCE)
+  LL_RCC_SetClockSource(LL_RCC_I2C123_CLKSOURCE_PCLK1);
+#endif
+
+  return 0;
+}
+
 #endif
 
 int stm32_i2c_init(uint8_t bus, uint32_t clock_rate)
@@ -413,7 +437,7 @@ int stm32_i2c_init(uint8_t bus, uint32_t clock_rate)
   I2C_InitTypeDef& init = h->Init;
 
 #if defined(STM32H7) || defined(STM32H7RS)
-  // Fetch relevant peripheral clock frequency
+  i2c_init_clock_source(h->Instance);
 # if defined(LL_RCC_I2C123_CLKSOURCE_PCLK1)
   uint32_t pclk_freq = LL_RCC_GetI2CClockFreq(LL_RCC_I2C123_CLKSOURCE_PCLK1);
 # elif defined(LL_RCC_I2C1_CLKSOURCE_PCLK1)
@@ -558,26 +582,13 @@ static int i2c_enable_clock(I2C_TypeDef* instance)
   /* Peripheral clock enable */
   if (instance == I2C1) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
-#if defined(LL_RCC_I2C1_CLKSOURCE)
-    LL_RCC_SetClockSource(LL_RCC_I2C1_CLKSOURCE_PCLK1);
-#endif
   } else if (instance == I2C2) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C2);
-#if defined(LL_RCC_I2C23_CLKSOURCE)
-    LL_RCC_SetClockSource(LL_RCC_I2C23_CLKSOURCE_PCLK1);
-#endif
   } else if (instance == I2C3) {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C3);
-#if defined(LL_RCC_I2C23_CLKSOURCE)
-    LL_RCC_SetClockSource(LL_RCC_I2C23_CLKSOURCE_PCLK1);
-#endif
   } else {
     return -1;
   }
-
-#if defined(LL_RCC_I2C123_CLKSOURCE)
-  LL_RCC_SetClockSource(LL_RCC_I2C123_CLKSOURCE_PCLK1);
-#endif
 
   return 0;
 }
@@ -660,25 +671,6 @@ static int i2c_pins_deinit(const _i2c_defs* def)
   */
 void HAL_I2C_MspInit(I2C_HandleTypeDef *h)
 {
-  // PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C1;
-  // PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C123CLKSOURCE_D2PCLK1;
-  // HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
-
-  // PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C2;
-  // PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C123CLKSOURCE_D2PCLK1;
-  // HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
-
-  // PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_I2C3;
-  // PeriphClkInitStruct.I2c123ClockSelection = RCC_I2C123CLKSOURCE_D2PCLK1;
-  // HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
-
-  // __HAL_RCC_GPIOB_CLK_ENABLE();
-  // __HAL_RCC_GPIOH_CLK_ENABLE();
-
-  // __HAL_RCC_I2C1_CLK_ENABLE();
-  // __HAL_RCC_I2C2_CLK_ENABLE();
-  // __HAL_RCC_I2C3_CLK_ENABLE();
-
   const _i2c_defs* defs = nullptr;
 #if defined(I2C_B1)
   if (h == &hi2c1) { defs = &pins_hi2c1; }
