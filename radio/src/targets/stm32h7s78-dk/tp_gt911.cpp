@@ -224,7 +224,7 @@ struct TouchState touchPanelRead()
 {
   uint8_t state = 0;
 
-  // if (!touchEventOccured) return internalTouchState;
+  if (!touchEventOccured) return internalTouchState;
 
   touchEventOccured = false;
 
@@ -315,8 +315,7 @@ struct TouchState touchPanelRead()
 
 bool touchPanelEventOccured()
 {
-  // return touchEventOccured;
-  return true;
+  return touchEventOccured;
 }
 
 TouchState getInternalTouchState()
