@@ -216,6 +216,25 @@ void SDRAM_InitSequence(void)
   while((__FMC_SDRAM_GET_FLAG(FMC_SDRAM_DEVICE, FMC_SDRAM_FLAG_BUSY) != 0));
 }
 
+extern uint32_t SDRAM_START;
+
+static void ram_test()
+{
+  uint32_t counter = 0;
+  for (uint32_t* addr = &SDRAM_START; addr < &SDRAM_START + 0x200000; addr++) {
+    *addr = counter++;
+  }
+
+  for (uint32_t i = 0; i < 1000; i++) {
+    counter = 0;
+    for (uint32_t* addr = &SDRAM_START; addr < &SDRAM_START + 0x200000; addr++) {
+      if (*addr != counter++) {
+        asm("BKPT");
+      }
+    }
+  }
+}
+
 extern "C" void SDRAM_Init(void)
 {
   //delay funcion needed
@@ -271,4 +290,7 @@ extern "C" void SDRAM_Init(void)
   /* FMC SDRAM device initialization sequence */
   SDRAM_InitSequence();
   FMC_SDRAM_WriteProtection_Disable(FMC_SDRAM_DEVICE, SDRAM_BANK);
+
+  // debug
+  ram_test();
 }
