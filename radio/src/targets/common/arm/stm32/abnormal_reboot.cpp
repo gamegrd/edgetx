@@ -35,7 +35,7 @@ constexpr uint32_t _SHUTDOWN_REQUEST = 0xDEADBEEF;
 
 constexpr uint32_t _REBOOT_CAUSE_DEFAULT = 0xFFFFFFFF;
 
-static uint32_t _reboot_cause = _REBOOT_CAUSE_DEFAULT;
+uint32_t _reboot_cause = _REBOOT_CAUSE_DEFAULT;
 
 #if defined(DEBUG)
 uint32_t _dbg_csr = 0xFFFFFFFF;

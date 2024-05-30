@@ -271,7 +271,8 @@ void SystemInit(void)
      AHB/APBx prescalers and Flash settings ----------------------------------*/
   SetSysClock();
 
-#if defined(DEBUG_MEMTEST) && defined(DEBUG_SEGGER_RTT)
+#if defined(DEBUG_MEMTEST)
+  void ram_test();
   // This will extensively test memory timins;
   ram_test();
 #endif

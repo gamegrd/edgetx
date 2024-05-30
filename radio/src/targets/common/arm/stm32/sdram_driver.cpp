@@ -216,7 +216,9 @@ void SDRAM_InitSequence(void)
   while((__FMC_SDRAM_GET_FLAG(FMC_SDRAM_DEVICE, FMC_SDRAM_FLAG_BUSY) != 0));
 }
 
+#if defined(DEBUG_MEMTEST)
 extern uint32_t SDRAM_START;
+extern uint32_t _reboot_cause;
 
 extern "C" void ram_test()
 {
@@ -229,12 +231,16 @@ extern "C" void ram_test()
     counter = 0;
     for (uint32_t* addr = &SDRAM_START; addr < &SDRAM_START + 0x200000; addr++) {
       if (*addr != counter++) {
+#if defined(DEBUG_SEGGER_RTT)
         __asm("BKPT #0\n") ; // Break into the debugger
+#else
+        _reboot_cause = 1; // Will make the firmware start in EM to warn about test failure
+#endif
       }
     }
   }
-  __asm("BKPT #0\n") ; // Break into the debugger
 }
+#endif
 
 extern "C" void SDRAM_Init(void)
 {
