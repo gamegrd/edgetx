@@ -218,7 +218,7 @@ void SDRAM_InitSequence(void)
 
 extern uint32_t SDRAM_START;
 
-static void ram_test()
+extern "C" void ram_test()
 {
   uint32_t counter = 0;
   for (uint32_t* addr = &SDRAM_START; addr < &SDRAM_START + 0x200000; addr++) {
@@ -229,10 +229,11 @@ static void ram_test()
     counter = 0;
     for (uint32_t* addr = &SDRAM_START; addr < &SDRAM_START + 0x200000; addr++) {
       if (*addr != counter++) {
-        asm("BKPT");
+        __asm("BKPT #0\n") ; // Break into the debugger
       }
     }
   }
+  __asm("BKPT #0\n") ; // Break into the debugger
 }
 
 extern "C" void SDRAM_Init(void)
@@ -290,7 +291,4 @@ extern "C" void SDRAM_Init(void)
   /* FMC SDRAM device initialization sequence */
   SDRAM_InitSequence();
   FMC_SDRAM_WriteProtection_Disable(FMC_SDRAM_DEVICE, SDRAM_BANK);
-
-  // debug
-  ram_test();
 }

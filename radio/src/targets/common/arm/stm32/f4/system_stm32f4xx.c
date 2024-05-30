@@ -271,6 +271,11 @@ void SystemInit(void)
      AHB/APBx prescalers and Flash settings ----------------------------------*/
   SetSysClock();
 
+#if defined(DEBUG_MEMTEST) && defined(DEBUG_SEGGER_RTT)
+  // This will extensively test memory timins;
+  ram_test();
+#endif
+
   /* Configure the Vector Table location add offset address ------------------*/
 #ifdef VECT_TAB_SRAM
   SCB->VTOR = SRAM_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM */
