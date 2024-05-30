@@ -222,6 +222,10 @@ extern uint32_t _reboot_cause;
 
 extern "C" void ram_test()
 {
+  gpio_init(LED_BLUE_GPIO, GPIO_OUT, GPIO_PIN_SPEED_LOW);
+  gpio_init(LED_RED_GPIO, GPIO_OUT, GPIO_PIN_SPEED_LOW);
+  gpio_set(LED_BLUE_GPIO);
+
   uint32_t counter = 0;
   for (uint32_t* addr = &SDRAM_START; addr < &SDRAM_START + 0x200000; addr++) {
     *addr = counter++;
@@ -231,6 +235,8 @@ extern "C" void ram_test()
     counter = 0;
     for (uint32_t* addr = &SDRAM_START; addr < &SDRAM_START + 0x200000; addr++) {
       if (*addr != counter++) {
+          gpio_clear(LED_BLUE_GPIO);
+          gpio_set(LED_RED_GPIO);
 #if defined(DEBUG_SEGGER_RTT)
         __asm("BKPT #0\n") ; // Break into the debugger
 #else
