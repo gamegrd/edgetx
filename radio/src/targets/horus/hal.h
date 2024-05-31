@@ -559,13 +559,9 @@
   #define LED_GREEN_GPIO                GPIO_PIN(GPIOC, 13)  //PC.13
   #define LED_BLUE_GPIO                 GPIO_PIN(GPIOE, 3)   //PE.03
 #elif defined(PCBX10)
-  #define LED_RCC_AHB1Periph            RCC_AHB1Periph_GPIOE
-  #define LED_RED_GPIO                  GPIOE
-  #define LED_RED_GPIO_PIN              GPIO_Pin_2
-  #define LED_GREEN_GPIO                GPIOE
-  #define LED_GREEN_GPIO_PIN            GPIO_Pin_4
-  #define LED_BLUE_GPIO                 GPIOE
-  #define LED_BLUE_GPIO_PIN             GPIO_Pin_5
+  #define LED_RED_GPIO                  GPIO_PIN(GPIOE, 2) // PE.02
+  #define LED_GREEN_GPIO                GPIO_PIN(GPIOE, 4) // PE.04
+  #define LED_BLUE_GPIO                 GPIO_PIN(GPIOE, 5) // PE.05
 #endif
 
 
