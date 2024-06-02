@@ -248,8 +248,8 @@ void CurveEdit::checkEvents()
   Window::checkEvents();
 }
 
-CurveEditWindow::CurveEditWindow(uint8_t index) :
-    Page(ICON_MODEL_CURVES, PAD_ZERO), index(index)
+CurveEditWindow::CurveEditWindow(uint8_t index, std::function<void(void)> refreshView) :
+    Page(ICON_MODEL_CURVES, PAD_ZERO), index(index), refreshView(refreshView)
 {
   buildBody(body);
   buildHeader(header);
@@ -399,4 +399,10 @@ void CurveEditWindow::buildBody(Window* window)
   curveEdit = new CurveEdit(line, {0, 0, curveWidth, curveWidth}, index);
 
   curveDataEdit->setCurveEdit(curveEdit);
+}
+
+void CurveEditWindow::onCancel()
+{
+  if (refreshView) refreshView();
+  Page::onCancel();
 }

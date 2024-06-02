@@ -156,6 +156,7 @@ class Window
   virtual void onEvent(event_t event);
   virtual void onClicked();
   virtual void onCancel();
+  virtual bool onLongPress();
 
   void invalidate();
 
@@ -204,6 +205,7 @@ class Window
   LcdFlags textFlags = 0;
 
   bool _deleted = false;
+  static bool _longPressed;
 
   std::function<void()> closeHandler;
   std::function<void(bool)> focusHandler;
@@ -213,6 +215,7 @@ class Window
   virtual void addChild(Window *window);
   void removeChild(Window *window);
 
+  void eventHandler(lv_event_t *e);
   static void window_event_cb(lv_event_t *e);
 };
 

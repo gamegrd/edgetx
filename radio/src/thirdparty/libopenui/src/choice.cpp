@@ -114,8 +114,7 @@ Choice::Choice(Window* parent, const rect_t& rect, int vmin, int vmax,
     vmax(vmax),
     menuTitle(title),
     _getValue(std::move(_getValue)),
-    _setValue(std::move(_setValue)),
-    longPressData({})
+    _setValue(std::move(_setValue))
 {
   lv_event_send(lvobj, LV_EVENT_VALUE_CHANGED, nullptr);
 }
@@ -128,8 +127,7 @@ Choice::Choice(Window* parent, const rect_t& rect, const char* const values[],
     vmax(vmax),
     menuTitle(title),
     _getValue(std::move(_getValue)),
-    _setValue(std::move(_setValue)),
-    longPressData({})
+    _setValue(std::move(_setValue))
 {
   setValues(values);
   lv_event_send(lvobj, LV_EVENT_VALUE_CHANGED, nullptr);
@@ -145,8 +143,7 @@ Choice::Choice(Window* parent, const rect_t& rect,
     vmax(vmax),
     menuTitle(title),
     _getValue(std::move(_getValue)),
-    _setValue(std::move(_setValue)),
-    longPressData({})
+    _setValue(std::move(_setValue))
 {
   lv_event_send(lvobj, LV_EVENT_VALUE_CHANGED, nullptr);
 }
@@ -183,7 +180,7 @@ void Choice::setValue(int val)
 
 void Choice::onClicked()
 {
-  if (!longPressData.isLongPressed) openMenu();
+  openMenu();
 }
 
 void Choice::fillMenu(Menu* menu, const FilterFct& filter)
@@ -237,24 +234,4 @@ void Choice::openMenu()
   fillMenu(menu);
 
   menu->setCloseHandler([=]() { setEditMode(false); });
-}
-
-static void localLongPressHandler(lv_event_t* e)
-{
-  lv_eventData_t* ld = (lv_eventData_t*)lv_event_get_user_data(e);
-  ld->isLongPressed = true;
-  ld->lv_LongPressHandler(ld->userData);
-}
-
-void Choice::set_lv_LongPressHandler(lvHandler_t longPressHandler, void* data)
-{
-  TRACE("longPressHandler=%p", longPressHandler);
-
-  if (longPressHandler) {
-    longPressData.userData = data;
-    longPressData.lv_LongPressHandler = longPressHandler;
-    lv_obj_add_event_cb(lvobj, localLongPressHandler, LV_EVENT_LONG_PRESSED,
-                        &longPressData);
-    lv_obj_add_event_cb(lvobj, ClickHandler, LV_EVENT_CLICKED, this);
-  }
 }

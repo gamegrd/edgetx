@@ -42,8 +42,6 @@ class MenuToolbar : public Window
   void resetFilter();
   void onEvent(event_t event) override;
 
-  virtual void longPress() {}
-
  protected:
   Choice* choice;
   Choice::FilterFct filter;
